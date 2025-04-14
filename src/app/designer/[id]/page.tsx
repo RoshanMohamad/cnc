@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, use } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
@@ -31,13 +31,15 @@ import {
   AlignLeft,
   AlignRight,
 } from "lucide-react"
+import { promises } from "dns"
 
-export default function DesignerPage({ params }: { params: { id: string } }) {
+export default function DesignerPage({ params }: { params: Promise<{ id: string }> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [tool, setTool] = useState("select")
   const [zoom, setZoom] = useState(100)
   const [showGrid, setShowGrid] = useState(true)
   const [gcode, setGcode] = useState("")
+  const [id, setId] = useState<string | null>(null)
 
   // T-shirt properties
   const [tshirtSize, setTshirtSize] = useState("M")
@@ -56,6 +58,13 @@ export default function DesignerPage({ params }: { params: { id: string } }) {
 
   // Default sizes quick selection
   const defaultSizes = ["XS", "S", "M", "L", "XL", "XXL"]
+
+  useEffect(() => {
+    // Check if the ID is valid
+    params.then((resolvedParams) => {
+      setId(resolvedParams.id)
+    })
+  }, [params])
 
   // Initialize canvas
   useEffect(() => {
@@ -175,34 +184,34 @@ export default function DesignerPage({ params }: { params: { id: string } }) {
 
     // Neck
     ctx.beginPath()
-    ctx.arc(centerX, topY, neckSize, Math.PI, 2 * Math.PI)
+    ctx.arc(centerX, topY, neckSize, Math.PI / 64, Math.PI)
     ctx.stroke()
-
+    
     // Shoulders and body
     ctx.beginPath()
     ctx.moveTo(centerX - neckSize, topY)
-    ctx.lineTo(centerX - baseWidth / 2, topY + 50)
+    ctx.arcTo(centerX - baseWidth / 2, topY + 50, centerX - baseWidth / 2, topY + baseLength, 20) // Left shoulder rounded
     ctx.lineTo(centerX - baseWidth / 2, topY + baseLength)
     ctx.lineTo(centerX + baseWidth / 2, topY + baseLength)
-    ctx.lineTo(centerX + baseWidth / 2, topY + 50)
+    ctx.arcTo(centerX + baseWidth / 2, topY + 50, centerX + neckSize, topY, 20) // Right shoulder rounded
     ctx.lineTo(centerX + neckSize, topY)
     ctx.stroke()
 
     // Left sleeve
-    ctx.beginPath()
-    ctx.moveTo(centerX - baseWidth / 2, topY + 50)
-    ctx.lineTo(centerX - baseWidth / 2 - 100, topY + 150)
-    ctx.lineTo(centerX - baseWidth / 2 - 50, topY + 150)
-    ctx.lineTo(centerX - baseWidth / 2, topY + 100)
-    ctx.stroke()
+    // ctx.beginPath()
+    // ctx.moveTo(centerX - baseWidth / 2, topY + 50)
+    // ctx.lineTo(centerX - baseWidth / 2 - 100, topY + 150)
+    // ctx.lineTo(centerX - baseWidth  - 50, topY + 150)
+    // ctx.lineTo(centerX - baseWidth / 2, topY + 100)
+    // ctx.stroke()
 
-    // Right sleeve
-    ctx.beginPath()
-    ctx.moveTo(centerX + baseWidth / 2, topY + 50)
-    ctx.lineTo(centerX + baseWidth / 2 + 100, topY + 150)
-    ctx.lineTo(centerX + baseWidth / 2 + 50, topY + 150)
-    ctx.lineTo(centerX + baseWidth / 2, topY + 100)
-    ctx.stroke()
+    // // Right sleeve
+    // ctx.beginPath()
+    // ctx.moveTo(centerX + baseWidth / 2, topY + 50)
+    // ctx.lineTo(centerX + baseWidth / 2 + 100, topY + 150)
+    // ctx.lineTo(centerX + baseWidth / 2 + 50, topY + 150)
+    // ctx.lineTo(centerX + baseWidth / 2, topY + 100)
+    // ctx.stroke()
 
     // Add size label
     ctx.fillStyle = "#000000"
@@ -377,7 +386,7 @@ M2 ; End program`
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">
-          {params.id === "new" ? "New T-Shirt Design" : `Editing: T-Shirt ${params.id}`}
+          {id === "new" ? "New T-Shirt Design" : `Editing: T-Shirt ${id}`}
         </h1>
         <div className="flex gap-2">
           <Button variant="outline">
@@ -501,7 +510,7 @@ M2 ; End program`
                 <Label htmlFor="design-name">Design Name</Label>
                 <Input
                   id="design-name"
-                  defaultValue={params.id === "new" ? "New T-Shirt Design" : `T-Shirt ${params.id}`}
+                  defaultValue={id === "new" ? "New T-Shirt Design" : `T-Shirt ${id}`}
                 />
               </div>
 
