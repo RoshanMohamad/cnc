@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner" // Updated import
 import { Loader2, WifiOff } from "lucide-react"
 
 interface MachineConnectionProps {
@@ -14,7 +14,6 @@ interface MachineConnectionProps {
 }
 
 export function MachineConnection({ onConnect }: MachineConnectionProps) {
-  const { toast } = useToast()
   const [connectionType, setConnectionType] = useState("usb")
   const [port, setPort] = useState("/dev/ttyUSB0")
   const [address, setAddress] = useState("192.168.1.100")
@@ -25,8 +24,7 @@ export function MachineConnection({ onConnect }: MachineConnectionProps) {
     setIsConnecting(true)
 
     try {
-      // In a real application, this would make an API call to connect to the machine
-      // For demonstration, we'll simulate a connection
+      // Simulate connection
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       const machineDetails = {
@@ -38,17 +36,16 @@ export function MachineConnection({ onConnect }: MachineConnectionProps) {
         status: "connected",
       }
 
-      toast({
-        title: "Machine Connected",
-        description: `Successfully connected to ${machineDetails.name}`,
+      // Updated Sonner toast
+      toast.success(`Successfully connected to ${machineDetails.name}`, {
+        description: "Machine is now ready for operation",
       })
 
       onConnect(machineDetails)
     } catch (error) {
-      toast({
-        title: "Connection Failed",
+      // Updated error toast
+      toast.error("Connection Failed", {
         description: "Could not connect to the machine. Please check your settings.",
-        variant: "destructive",
       })
     } finally {
       setIsConnecting(false)
