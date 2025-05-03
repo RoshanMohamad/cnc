@@ -1,67 +1,128 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server";
+
+// types/gcode.ts
+export interface GcodeRequest {
+  machineId: string;
+  tshirtSize?: string;
+  tshirtStyle?: string;
+  textContent?: string;
+  textPosition?: { x: number; y: number };
+  textScale?: number;
+  textRotation?: number;
+  textFont?: string;
+  textBold?: boolean;
+  textItalic?: boolean;
+  textAlign?: string;
+  textColor?: string;
+  material?: string;
+  thickness?: number;
+  speed?: number;
+}
+
+interface TShirtSpecs {
+  tshirtSize: string;
+  tshirtStyle: string;
+  textContent: string;
+  textPosition: { x: number; y: number };
+  textScale: number;
+  textRotation: number;
+  textFont: string;
+  textBold: boolean;
+  textItalic: boolean;
+  textAlign: string;
+  textColor: string;
+  material: string;
+  thickness: number;
+  speed: number;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json()
+    const body: GcodeRequest = await request.json();
 
-    // In a real application, this would process the t-shirt pattern data
-    // and generate G-code based on the pattern's geometry and text design
+    // Validate required fields
+    if (!body.machineId) {
+      return NextResponse.json(
+        { error: "machineId is required" },
+        { status: 400 }
+      );
+    }
 
-    // For demonstration purposes, we're returning a simple G-code example
-    const gcode = generateTshirtGcode(data)
+    // Generate G-code with proper typing
+    const gcode = generateTshirtGcode({
+      tshirtSize: body.tshirtSize ?? "M",
+      tshirtStyle: body.tshirtStyle ?? "classic",
+      textContent: body.textContent ?? "SAMPLE TEXT",
+      textPosition: body.textPosition ?? { x: 400, y: 250 },
+      textScale: body.textScale ?? 100,
+      textRotation: body.textRotation ?? 0,
+      textFont: body.textFont ?? "Arial",
+      textBold: body.textBold ?? false,
+      textItalic: body.textItalic ?? false,
+      textAlign: body.textAlign ?? "center",
+      textColor: body.textColor ?? "#000000",
+      material: body.material ?? "cotton",
+      thickness: body.thickness ?? 0.5,
+      speed: body.speed ?? 1000,
+    });
 
     return NextResponse.json({
       success: true,
       gcode,
-    })
-  } catch (error) {
-    return NextResponse.json({ success: false, error: "Failed to generate G-code" }, { status: 500 })
+    });
+  } catch (error: unknown) {
+    console.error("Gcode generation error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: 500 }
+    );
   }
 }
 
-function generateTshirtGcode(data: any) {
+function generateTshirtGcode(data: TShirtSpecs): string {
   const {
-    tshirtSize = "M",
-    tshirtStyle = "classic",
-    textContent = "SAMPLE TEXT",
-    textPosition = { x: 400, y: 250 },
-    textScale = 100,
-    textRotation = 0,
-    textFont = "Arial",
-    textBold = false,
-    textItalic = false,
-    textAlign = "center",
-    textColor = "#000000",
-    material = "cotton",
-    thickness = 0.5,
-    speed = 1000,
-  } = data
+    tshirtSize,
+    tshirtStyle,
+    textContent,
+    textPosition,
+    textScale,
+    textRotation,
+    textFont,
+    textBold,
+    textItalic,
+    textAlign,
+    textColor,
+    material,
+    thickness,
+    speed,
+  } = data;
 
   // Size multipliers
-  const sizeMultipliers: { [key: string]: number } = {
+  const sizeMultipliers: Record<string, number> = {
     XS: 0.9,
     S: 0.95,
     M: 1,
     L: 1.05,
     XL: 1.1,
     XXL: 1.15,
-  }
+  };
 
-  const multiplier = sizeMultipliers[tshirtSize] || 1
+  const multiplier = sizeMultipliers[tshirtSize] ?? 1;
 
   // Style adjustments
-  const styleAdjustments: { [key: string]: { width: number; length: number } } = {
+  const styleAdjustments: Record<string, { width: number; length: number }> = {
     classic: { width: 1, length: 1 },
     slim: { width: 0.9, length: 1.05 },
     oversized: { width: 1.2, length: 0.95 },
-  }
+  };
 
-  const styleAdj = styleAdjustments[tshirtStyle] || styleAdjustments.classic
+  const styleAdj = styleAdjustments[tshirtStyle] ?? styleAdjustments.classic;
 
   // Base dimensions in mm
-  const baseWidth = 600 * multiplier * styleAdj.width
-  const baseLength = 700 * multiplier * styleAdj.length
-  const neckSize = 100 * multiplier
+  const baseWidth = 600 * multiplier * styleAdj.width;
+  const baseLength = 700 * multiplier * styleAdj.length;
+  const neckSize = 100 * multiplier;
 
   return `; T-ShirtCraft G-code for ${tshirtStyle} T-shirt, Size ${tshirtSize}
 ; Generated on ${new Date().toLocaleString()}
@@ -129,6 +190,5 @@ Z1 ; Lower marker slightly
 ; End
 G0 Z10 ; Raise cutter
 G0 X0 Y0 ; Return to origin
-M2 ; End program`
+M2 ; End program`;
 }
-

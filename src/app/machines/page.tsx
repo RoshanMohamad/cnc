@@ -66,10 +66,7 @@ export default function MachinesPage() {
     }
   }
 
-  const addMachine = (machine: any) => {
-    const newId = Math.max(...machines.map((m) => m.id), 0) + 1
-    setMachines([...machines, { ...machine, id: newId, status: "disconnected", lastConnected: "Never" }])
-  }
+  
 
   return (
     <div className="container mx-auto py-10">
@@ -200,7 +197,7 @@ export default function MachinesPage() {
               <div className="text-center p-8 border rounded-lg bg-muted/50">
                 <p className="text-muted-foreground">No machines configured yet.</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Click "Add Machine" to configure your first cutting machine.
+                  {`Click "Add Machine" to configure your first cutting machine.`}
                 </p>
               </div>
             )}
@@ -364,7 +361,7 @@ export default function MachinesPage() {
               <CardContent className="flex flex-col items-center justify-center py-8">
                 <Wifi className="h-16 w-16 text-muted-foreground mb-4" />
                 <p className="text-center text-muted-foreground">
-                  Select a machine from the list and click "Connect" to begin controlling your cutting machine.
+                  {`Select a machine from the list and click "Connect" to begin controlling your cutting machine.`}
                 </p>
               </CardContent>
             </Card>

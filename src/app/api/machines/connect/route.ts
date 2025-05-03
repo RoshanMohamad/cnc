@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { machineId, connectionType, port, address } = await request.json()
+    const { machineId } = await request.json()
 
     // In a real application, this would attempt to connect to the actual machine
     // using the provided connection details
@@ -24,8 +24,11 @@ export async function POST(request: NextRequest) {
         status: "idle",
       },
     })
-  } catch (error) {
-    return NextResponse.json({ success: false, error: "Failed to connect to machine" }, { status: 500 })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Connection failed';
+    return new Response(JSON.stringify({ error: message }), {
+      status: 400,
+    });
   }
 }
 

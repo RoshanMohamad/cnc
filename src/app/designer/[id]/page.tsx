@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, use } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
@@ -31,7 +31,6 @@ import {
   AlignLeft,
   AlignRight,
 } from "lucide-react"
-import { promises } from "dns"
 
 export default function DesignerPage({ params }: { params: Promise<{ id: string }> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)

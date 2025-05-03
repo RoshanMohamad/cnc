@@ -24,8 +24,13 @@ export async function POST(request: NextRequest) {
       jobId: `job-${Date.now()}`,
       estimatedTime: "10:30", // 10 minutes and 30 seconds
     })
-  } catch (error) {
-    return NextResponse.json({ success: false, error: "Failed to send G-code to machine" }, { status: 500 })
+  } catch (error: unknown) {
+    console.error('Send error:', error);
+    return new Response(JSON.stringify({ 
+      error: error instanceof Error ? error.message : 'Send failed'
+    }), {
+      status: 500,
+    });
   }
 }
 

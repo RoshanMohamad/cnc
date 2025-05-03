@@ -9,10 +9,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner" // Updated import
 import { Loader2, WifiOff } from "lucide-react"
 
-interface MachineConnectionProps {
-  onConnect: (machineDetails: any) => void
+export interface MachineConnectionDetails {
+  id: string;
+  name: string;
+  connectionType: 'usb' | 'network';
+  port: string;
+  address?: string;
+  status: 'connected' | 'disconnected' | 'error';
 }
 
+interface MachineConnectionProps {
+  onConnect: (machineDetails: MachineConnectionDetails) => void; // No more any!
+}
 export function MachineConnection({ onConnect }: MachineConnectionProps) {
   const [connectionType, setConnectionType] = useState("usb")
   const [port, setPort] = useState("/dev/ttyUSB0")
@@ -41,12 +49,12 @@ export function MachineConnection({ onConnect }: MachineConnectionProps) {
         description: "Machine is now ready for operation",
       })
 
-      onConnect(machineDetails)
-    } catch (error) {
-      // Updated error toast
-      toast.error("Connection Failed", {
-        description: "Could not connect to the machine. Please check your settings.",
-      })
+      onConnect(machineDetails as MachineConnectionDetails) // No more any!
+    } catch (error: unknown) {
+      console.error('Connection error:', error); // Now using error
+      toast.error(
+        error instanceof Error ? error.message : 'Connection failed'
+      );
     } finally {
       setIsConnecting(false)
     }
