@@ -66,12 +66,19 @@ export async function POST(request: NextRequest) {
       speed: body.speed ?? 1000,
     });
 
+    const esp32Response = await sendGcodeToESP32(body.machineId, gcode);
+
+    if (!esp32Response.success) {
+      throw new Error(esp32Response.error || "Failed to send G-code to ESP32");
+    }
+
     return NextResponse.json({
       success: true,
       gcode,
+      esp32Response: esp32Response.message,
     });
   } catch (error: unknown) {
-    console.error("Gcode generation error:", error);
+    console.error("Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
       { error: errorMessage },
@@ -79,6 +86,38 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+async function sendGcodeToESP32(machineId: string, gcode: string) {
+  const esp32Endpoint = `http://${machineId}/api/gcode`; // Replace with ESP32 IP
+
+  try {
+    const response = await fetch(esp32Endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: gcode,
+    });
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `ESP32 returned ${response.status}`,
+      };
+    }
+
+    return {
+      success: true,
+      message: "G-code sent to ESP32",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: `Network error: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+}
+
+
+
 
 function generateTshirtGcode(data: TShirtSpecs): string {
   const {
