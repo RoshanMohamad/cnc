@@ -1,15 +1,26 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Slider } from "@/components/ui/slider"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Card, CardContent } from "@/components/ui/card"
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Save,
   FileCode,
@@ -30,75 +41,79 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
-} from "lucide-react"
+} from "lucide-react";
 
-export default function DesignerPage({ params }: { params: Promise<{ id: string }> }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [tool, setTool] = useState("select")
-  const [zoom, setZoom] = useState(100)
-  const [showGrid, setShowGrid] = useState(true)
-  const [gcode, setGcode] = useState("")
-  const [id, setId] = useState<string | null>(null)
+export default function DesignerPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [tool, setTool] = useState("select");
+  const [zoom, setZoom] = useState(100);
+  const [showGrid, setShowGrid] = useState(true);
+  const [gcode, setGcode] = useState("");
+  const [id, setId] = useState<string | null>(null);
   // New state for machine interaction
-  const [machineId, setMachineId] = useState("192.168.8.130") // Default or get from user/config
-  const [isSending, setIsSending] = useState(false)
-  const [sendStatus, setSendStatus] = useState<string | null>(null)
+  const [machineId, setMachineId] = useState("192.168.8.130"); // Default or get from user/config
+  const [isSending, setIsSending] = useState(false);
+  const [sendStatus, setSendStatus] = useState<string | null>(null);
 
   // T-shirt properties
-  const [tshirtSize, setTshirtSize] = useState("M")
-  const [tshirtStyle, setTshirtStyle] = useState("classic")
+  const [tshirtSize, setTshirtSize] = useState("M");
+  const [tshirtStyle, setTshirtStyle] = useState("classic");
 
   // Text design properties
-  const [textContent, setTextContent] = useState("SAMPLE TEXT")
-  const [textPosition, setTextPosition] = useState({ x: 400, y: 250 })
-  const [textScale, setTextScale] = useState(100)
-  const [textRotation, setTextRotation] = useState(0)
-  const [textFont, setTextFont] = useState("Arial")
-  const [textColor, setTextColor] = useState("#000000")
-  const [textBold, setTextBold] = useState(false)
-  const [textItalic, setTextItalic] = useState(false)
-  const [textAlign, setTextAlign] = useState("center")
+  const [textContent, setTextContent] = useState("SAMPLE TEXT");
+  const [textPosition, setTextPosition] = useState({ x: 400, y: 250 });
+  const [textScale, setTextScale] = useState(100);
+  const [textRotation, setTextRotation] = useState(0);
+  const [textFont, setTextFont] = useState("Arial");
+  const [textColor, setTextColor] = useState("#000000");
+  const [textBold, setTextBold] = useState(false);
+  const [textItalic, setTextItalic] = useState(false);
+  const [textAlign, setTextAlign] = useState("center");
 
   // Default sizes quick selection
-  const defaultSizes = ["XS", "S", "M", "L", "XL", "XXL"]
+  const defaultSizes = ["XS", "S", "M", "L", "XL", "XXL"];
 
   useEffect(() => {
     // Check if the ID is valid
     params.then((resolvedParams) => {
-      setId(resolvedParams.id)
-    })
-  }, [params])
+      setId(resolvedParams.id);
+    });
+  }, [params]);
 
   // Initialize canvas
   useEffect(() => {
-    const canvas = canvasRef.current
+    const canvas = canvasRef.current;
     if (!canvas) {
-      console.error("Canvas element not found.")
-      return
+      console.error("Canvas element not found.");
+      return;
     }
 
-    const ctx = canvas.getContext("2d")
+    const ctx = canvas.getContext("2d");
     if (!ctx) {
-      console.error("Failed to get 2D context from canvas.")
-      return
+      console.error("Failed to get 2D context from canvas.");
+      return;
     }
 
     if (canvas.width <= 0 || canvas.height <= 0) {
-      console.error("Canvas dimensions are invalid.")
-      return
+      console.error("Canvas dimensions are invalid.");
+      return;
     }
 
     // Clear canvas
-    ctx.fillStyle = "#ffffff"
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw grid if enabled
     if (showGrid) {
-      drawGrid(ctx, canvas.width, canvas.height)
+      drawGrid(ctx, canvas.width, canvas.height);
     }
 
     // Draw t-shirt outline based on selected size
-    drawTshirtOutline(ctx, tshirtSize, tshirtStyle)
+    drawTshirtOutline(ctx, tshirtSize, tshirtStyle);
 
     // Draw text design
     drawTextDesign(
@@ -111,8 +126,8 @@ export default function DesignerPage({ params }: { params: Promise<{ id: string 
       textColor,
       textBold,
       textItalic,
-      textAlign,
-    )
+      textAlign
+    );
   }, [
     showGrid,
     tshirtSize,
@@ -126,32 +141,40 @@ export default function DesignerPage({ params }: { params: Promise<{ id: string 
     textBold,
     textItalic,
     textAlign,
-  ])
+  ]);
 
   // Draw grid helper
-  const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.strokeStyle = "#e5e7eb"
-    ctx.lineWidth = 1
+  const drawGrid = (
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number
+  ) => {
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth = 1;
 
     // Draw vertical lines
     for (let x = 0; x <= width; x += 20) {
-      ctx.beginPath()
-      ctx.moveTo(x, 0)
-      ctx.lineTo(x, height)
-      ctx.stroke()
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
     }
 
     // Draw horizontal lines
     for (let y = 0; y <= height; y += 20) {
-      ctx.beginPath()
-      ctx.moveTo(0, y)
-      ctx.lineTo(width, y)
-      ctx.stroke()
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
     }
-  }
+  };
 
   // Draw t-shirt outline based on size
-  const drawTshirtOutline = (ctx: CanvasRenderingContext2D, size: string, style: string) => {
+  const drawTshirtOutline = (
+    ctx: CanvasRenderingContext2D,
+    size: string,
+    style: string
+  ) => {
     // Size multipliers
     const sizeMultipliers: { [key: string]: number } = {
       XS: 0.9,
@@ -160,45 +183,53 @@ export default function DesignerPage({ params }: { params: Promise<{ id: string 
       L: 1.05,
       XL: 1.1,
       XXL: 1.15,
-    }
+    };
 
-    const multiplier = sizeMultipliers[size] || 1
+    const multiplier = sizeMultipliers[size] || 1;
 
     // Style adjustments
-    const styleAdjustments: { [key: string]: { width: number; length: number; neckSize: number } } = {
+    const styleAdjustments: {
+      [key: string]: { width: number; length: number; neckSize: number };
+    } = {
       classic: { width: 1, length: 1, neckSize: 1 },
       slim: { width: 0.9, length: 1.05, neckSize: 0.9 },
       oversized: { width: 1.2, length: 0.95, neckSize: 1.1 },
-    }
+    };
 
-    const styleAdj = styleAdjustments[style] || styleAdjustments.classic
+    const styleAdj = styleAdjustments[style] || styleAdjustments.classic;
 
-    ctx.strokeStyle = "#000000"
-    ctx.lineWidth = 2
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 2;
 
     // Base dimensions
-    const baseWidth = 300 * multiplier * styleAdj.width
-    const baseLength = 350 * multiplier * styleAdj.length
-    const neckSize = 50 * multiplier * styleAdj.neckSize
+    const baseWidth = 300 * multiplier * styleAdj.width;
+    const baseLength = 350 * multiplier * styleAdj.length;
+    const neckSize = 50 * multiplier * styleAdj.neckSize;
 
     // Center position
-    const centerX = 400
-    const topY = 100
+    const centerX = 400;
+    const topY = 100;
 
     // Neck
-    ctx.beginPath()
-    ctx.arc(centerX, topY, neckSize, Math.PI / 64, Math.PI)
-    ctx.stroke()
-    
+    ctx.beginPath();
+    ctx.arc(centerX, topY, neckSize, Math.PI / 64, Math.PI);
+    ctx.stroke();
+
     // Shoulders and body
-    ctx.beginPath()
-    ctx.moveTo(centerX - neckSize, topY)
-    ctx.arcTo(centerX - baseWidth / 2, topY + 50, centerX - baseWidth / 2, topY + baseLength, 20) // Left shoulder rounded
-    ctx.lineTo(centerX - baseWidth / 2, topY + baseLength)
-    ctx.lineTo(centerX + baseWidth / 2, topY + baseLength)
-    ctx.arcTo(centerX + baseWidth / 2, topY + 50, centerX + neckSize, topY, 20) // Right shoulder rounded
-    ctx.lineTo(centerX + neckSize, topY)
-    ctx.stroke()
+    ctx.beginPath();
+    ctx.moveTo(centerX - neckSize, topY);
+    ctx.arcTo(
+      centerX - baseWidth / 2,
+      topY + 50,
+      centerX - baseWidth / 2,
+      topY + baseLength,
+      20
+    ); // Left shoulder rounded
+    ctx.lineTo(centerX - baseWidth / 2, topY + baseLength);
+    ctx.lineTo(centerX + baseWidth / 2, topY + baseLength);
+    ctx.arcTo(centerX + baseWidth / 2, topY + 50, centerX + neckSize, topY, 20); // Right shoulder rounded
+    ctx.lineTo(centerX + neckSize, topY);
+    ctx.stroke();
 
     // Left sleeve
     // ctx.beginPath()
@@ -217,10 +248,14 @@ export default function DesignerPage({ params }: { params: Promise<{ id: string 
     // ctx.stroke()
 
     // Add size label
-    ctx.fillStyle = "#000000"
-    ctx.font = "16px sans-serif"
-    ctx.fillText(`Size: ${size} (${style})`, centerX - 60, topY + baseLength + 30)
-  }
+    ctx.fillStyle = "#000000";
+    ctx.font = "16px sans-serif";
+    ctx.fillText(
+      `Size: ${size} (${style})`,
+      centerX - 60,
+      topY + baseLength + 30
+    );
+  };
 
   // Draw text design
   const drawTextDesign = (
@@ -233,54 +268,58 @@ export default function DesignerPage({ params }: { params: Promise<{ id: string 
     color: string,
     bold: boolean,
     italic: boolean,
-    align: string,
+    align: string
   ) => {
-    ctx.save()
+    ctx.save();
 
     // Move to position, then rotate and scale
-    ctx.translate(position.x, position.y)
-    ctx.rotate((rotation * Math.PI) / 180)
-    const scaleFactor = scale / 100
-    ctx.scale(scaleFactor, scaleFactor)
+    ctx.translate(position.x, position.y);
+    ctx.rotate((rotation * Math.PI) / 180);
+    const scaleFactor = scale / 100;
+    ctx.scale(scaleFactor, scaleFactor);
 
     // Set text properties
-    const fontStyle = `${italic ? "italic " : ""}${bold ? "bold " : ""}${Math.round(36 * scaleFactor)}px ${font}, sans-serif`
-    ctx.font = fontStyle
-    ctx.fillStyle = color
-    ctx.textAlign = align as CanvasTextAlign
+    const fontStyle = `${italic ? "italic " : ""}${
+      bold ? "bold " : ""
+    }${Math.round(36 * scaleFactor)}px ${font}, sans-serif`;
+    ctx.font = fontStyle;
+    ctx.fillStyle = color;
+    ctx.textAlign = align as CanvasTextAlign;
 
     // Draw text
-    const lines = text.split("\n")
-    const lineHeight = 40
+    const lines = text.split("\n");
+    const lineHeight = 40;
 
     lines.forEach((line, index) => {
-      const yOffset = (index - (lines.length - 1) / 2) * lineHeight
-      ctx.fillText(line, 0, yOffset)
-    })
+      const yOffset = (index - (lines.length - 1) / 2) * lineHeight;
+      ctx.fillText(line, 0, yOffset);
+    });
 
     // Draw bounding box (for visualization)
-    const maxLineWidth = Math.max(...lines.map((line) => ctx.measureText(line).width))
-    const textHeight = lines.length * lineHeight
-    const boxPadding = 10
+    const maxLineWidth = Math.max(
+      ...lines.map((line) => ctx.measureText(line).width)
+    );
+    const textHeight = lines.length * lineHeight;
+    const boxPadding = 10;
 
-    ctx.strokeStyle = "#cccccc"
-    ctx.lineWidth = 1
-    ctx.setLineDash([5, 5])
+    ctx.strokeStyle = "#cccccc";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
 
-    let boxX = 0
-    if (align === "left") boxX = maxLineWidth / 2
-    else if (align === "right") boxX = -maxLineWidth / 2
+    let boxX = 0;
+    if (align === "left") boxX = maxLineWidth / 2;
+    else if (align === "right") boxX = -maxLineWidth / 2;
 
     ctx.strokeRect(
       boxX - maxLineWidth / 2 - boxPadding,
       -textHeight / 2 + lineHeight / 2 - boxPadding,
       maxLineWidth + boxPadding * 2,
-      textHeight + boxPadding * 2,
-    )
-    ctx.setLineDash([])
+      textHeight + boxPadding * 2
+    );
+    ctx.setLineDash([]);
 
-    ctx.restore()
-  }
+    ctx.restore();
+  };
 
   // Generate G-code from the pattern
   const generateGcode = () => {
@@ -292,22 +331,24 @@ export default function DesignerPage({ params }: { params: Promise<{ id: string 
       L: 1.05,
       XL: 1.1,
       XXL: 1.15,
-    }
+    };
 
-    const multiplier = sizeMultipliers[tshirtSize] || 1
+    const multiplier = sizeMultipliers[tshirtSize] || 1;
 
-    const styleAdjustments: { [key: string]: { width: number; length: number } } = {
+    const styleAdjustments: {
+      [key: string]: { width: number; length: number };
+    } = {
       classic: { width: 1, length: 1 },
       slim: { width: 0.9, length: 1.05 },
       oversized: { width: 1.2, length: 0.95 },
-    }
+    };
 
-    const styleAdj = styleAdjustments[tshirtStyle] || styleAdjustments.classic
+    const styleAdj = styleAdjustments[tshirtStyle] || styleAdjustments.classic;
 
     // Base dimensions in mm
-    const baseWidth = 600 * multiplier * styleAdj.width
-    const baseLength = 700 * multiplier * styleAdj.length
-    const neckSize = 100 * multiplier
+    const baseWidth = 600 * multiplier * styleAdj.width;
+    const baseLength = 700 * multiplier * styleAdj.length;
+    const neckSize = 100 * multiplier;
 
     const sampleGcode = `; T-ShirtCraft G-code for ${tshirtStyle} T-shirt, Size ${tshirtSize}
 ; Generated on ${new Date().toLocaleString()}
@@ -372,53 +413,47 @@ Z1 ; Lower marker slightly
 ; End
 G0 Z10 ; Raise cutter
 G0 X0 Y0 ; Return to origin
-M2 ; End program`
+M2 ; End program`;
 
-    setGcode(sampleGcode)
-  }
+    setGcode(sampleGcode);
+  };
 
   // Handle text position change
   const moveTextDesign = (dx: number, dy: number) => {
     setTextPosition({
       x: textPosition.x + dx,
       y: textPosition.y + dy,
-    })
-  }
+    });
+  };
 
   // Handle sending G-code to the machine via the backend API
   const handleSendToMachine = async () => {
     if (!gcode) {
-      alert("Please generate G-code first.")
-      return
+      alert("Please generate G-code first.");
+      return;
     }
     if (!machineId) {
-      alert("Please enter a Machine ID (e.g., ESP32 IP Address).")
-      return
+      alert("Please enter a Machine ID (e.g., ESP32 IP Address).");
+      return;
     }
 
-    setIsSending(true)
-    setSendStatus("Sending G-code...")
+    setIsSending(true);
+    setSendStatus("Sending G-code...");
 
     try {
-      const response = await fetch("/api/machines/send", {
+      const res = await fetch("http://192.168.8.130/api/gcode", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ machineId, gcode }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || `Failed to send G-code. Server responded with ${response.status}`)
-      }
-      setSendStatus(`Successfully sent G-code! ESP32 says: ${data.esp32Response || "OK"}`)
-    } catch  {
-      setSendStatus(`Error`)
-      console.error("Error sending G-code:")
+        headers: { "Content-Type": "text/plain" },
+        body: "G1 X10 Y10",
+      });
+      if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+      console.log(await res.text());
+    } catch (err) {
+      console.error("Fetch failed:", err);
     } finally {
-      setIsSending(false)
+      setIsSending(false);
     }
-  }
+  };
 
   return (
     <div className="container mx-auto py-6">
@@ -461,7 +496,9 @@ M2 ; End program`
 
       {/* Machine ID Input and Status */}
       <div className="mb-6 p-4 border rounded-lg bg-card">
-        <Label htmlFor="machine-id" className="mb-2 block font-medium">Target Machine ID (ESP32 IP)</Label>
+        <Label htmlFor="machine-id" className="mb-2 block font-medium">
+          Target Machine ID (ESP32 IP)
+        </Label>
         <Input
           id="machine-id"
           value={machineId}
@@ -471,7 +508,13 @@ M2 ; End program`
           disabled={isSending}
         />
         {sendStatus && (
-          <p className={`text-sm ${sendStatus.startsWith("Error") ? "text-red-500" : "text-green-500"}`}>{sendStatus}</p>
+          <p
+            className={`text-sm ${
+              sendStatus.startsWith("Error") ? "text-red-500" : "text-green-500"
+            }`}
+          >
+            {sendStatus}
+          </p>
         )}
       </div>
 
@@ -511,7 +554,11 @@ M2 ; End program`
             </div>
 
             <div className="flex gap-1">
-              <Button variant="outline" size="icon" onClick={() => setShowGrid(!showGrid)}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowGrid(!showGrid)}
+              >
                 <Grid className={`h-4 w-4 ${showGrid ? "text-primary" : ""}`} />
               </Button>
               <Button variant="outline" size="icon">
@@ -520,11 +567,21 @@ M2 ; End program`
               <Button variant="outline" size="icon">
                 <Redo className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={() => setZoom(Math.max(50, zoom - 10))}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setZoom(Math.max(50, zoom - 10))}
+              >
                 <ZoomOut className="h-4 w-4" />
               </Button>
-              <div className="w-16 text-center flex items-center justify-center">{zoom}%</div>
-              <Button variant="outline" size="icon" onClick={() => setZoom(Math.min(200, zoom + 10))}>
+              <div className="w-16 text-center flex items-center justify-center">
+                {zoom}%
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setZoom(Math.min(200, zoom + 10))}
+              >
                 <ZoomIn className="h-4 w-4" />
               </Button>
             </div>
@@ -540,7 +597,12 @@ M2 ; End program`
                 transformOrigin: "top left",
               }}
             >
-              <canvas ref={canvasRef} width={800} height={600} className="cursor-crosshair" />
+              <canvas
+                ref={canvasRef}
+                width={800}
+                height={600}
+                className="cursor-crosshair"
+              />
             </div>
           </div>
         </div>
@@ -564,7 +626,9 @@ M2 ; End program`
                 <Label htmlFor="design-name">Design Name</Label>
                 <Input
                   id="design-name"
-                  defaultValue={id === "new" ? "New T-Shirt Design" : `T-Shirt ${id}`}
+                  defaultValue={
+                    id === "new" ? "New T-Shirt Design" : `T-Shirt ${id}`
+                  }
                 />
               </div>
 
@@ -607,7 +671,9 @@ M2 ; End program`
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="cotton">100% Cotton</SelectItem>
-                    <SelectItem value="cotton-poly">Cotton-Polyester Blend</SelectItem>
+                    <SelectItem value="cotton-poly">
+                      Cotton-Polyester Blend
+                    </SelectItem>
                     <SelectItem value="polyester">100% Polyester</SelectItem>
                     <SelectItem value="tri-blend">Tri-Blend</SelectItem>
                   </SelectContent>
@@ -616,7 +682,12 @@ M2 ; End program`
 
               <div className="space-y-2">
                 <Label htmlFor="thickness">Material Thickness (mm)</Label>
-                <Input id="thickness" type="number" defaultValue="0.5" step="0.1" />
+                <Input
+                  id="thickness"
+                  type="number"
+                  defaultValue="0.5"
+                  step="0.1"
+                />
               </div>
             </TabsContent>
 
@@ -641,7 +712,9 @@ M2 ; End program`
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Arial">Arial</SelectItem>
-                      <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                      <SelectItem value="Times New Roman">
+                        Times New Roman
+                      </SelectItem>
                       <SelectItem value="Courier New">Courier New</SelectItem>
                       <SelectItem value="Georgia">Georgia</SelectItem>
                       <SelectItem value="Verdana">Verdana</SelectItem>
@@ -673,7 +746,11 @@ M2 ; End program`
               <div className="space-y-2">
                 <Label>Text Style</Label>
                 <div className="flex gap-2">
-                  <Button variant={textBold ? "default" : "outline"} size="icon" onClick={() => setTextBold(!textBold)}>
+                  <Button
+                    variant={textBold ? "default" : "outline"}
+                    size="icon"
+                    onClick={() => setTextBold(!textBold)}
+                  >
                     <Bold className="h-4 w-4" />
                   </Button>
                   <Button
@@ -710,16 +787,32 @@ M2 ; End program`
               <div className="space-y-2">
                 <Label>Text Position</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" className="w-full" onClick={() => moveTextDesign(0, -10)}>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => moveTextDesign(0, -10)}
+                  >
                     Up
                   </Button>
-                  <Button variant="outline" className="w-full" onClick={() => moveTextDesign(0, 10)}>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => moveTextDesign(0, 10)}
+                  >
                     Down
                   </Button>
-                  <Button variant="outline" className="w-full" onClick={() => moveTextDesign(-10, 0)}>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => moveTextDesign(-10, 0)}
+                  >
                     Left
                   </Button>
-                  <Button variant="outline" className="w-full" onClick={() => moveTextDesign(10, 0)}>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => moveTextDesign(10, 0)}
+                  >
                     Right
                   </Button>
                 </div>
@@ -733,7 +826,11 @@ M2 ; End program`
                   <span className="text-xs">{textScale}%</span>
                 </div>
                 <div className="flex gap-2 items-center">
-                  <Button variant="outline" size="icon" onClick={() => setTextScale(Math.max(50, textScale - 10))}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setTextScale(Math.max(50, textScale - 10))}
+                  >
                     <Minimize className="h-4 w-4" />
                   </Button>
                   <Slider
@@ -745,7 +842,11 @@ M2 ; End program`
                     step={10}
                     className="flex-1"
                   />
-                  <Button variant="outline" size="icon" onClick={() => setTextScale(Math.min(200, textScale + 10))}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setTextScale(Math.min(200, textScale + 10))}
+                  >
                     <Maximize className="h-4 w-4" />
                   </Button>
                 </div>
@@ -762,7 +863,9 @@ M2 ; End program`
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setTextRotation((textRotation - 15 + 360) % 360)}
+                    onClick={() =>
+                      setTextRotation((textRotation - 15 + 360) % 360)
+                    }
                   >
                     <RotateCw className="h-4 w-4 transform -scale-x-100" />
                   </Button>
@@ -775,7 +878,11 @@ M2 ; End program`
                     step={15}
                     className="flex-1"
                   />
-                  <Button variant="outline" size="icon" onClick={() => setTextRotation((textRotation + 15) % 360)}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setTextRotation((textRotation + 15) % 360)}
+                  >
                     <RotateCw className="h-4 w-4" />
                   </Button>
                 </div>
@@ -799,8 +906,12 @@ M2 ; End program`
                 </div>
 
                 <div className="border rounded-md bg-muted p-2">
-                  <pre className="text-xs overflow-auto whitespace-pre" style={{ maxHeight: "400px" }}>
-                    {gcode || "Click 'Generate' to create G-code from your t-shirt design."}
+                  <pre
+                    className="text-xs overflow-auto whitespace-pre"
+                    style={{ maxHeight: "400px" }}
+                  >
+                    {gcode ||
+                      "Click 'Generate' to create G-code from your t-shirt design."}
                   </pre>
                 </div>
               </div>
@@ -813,19 +924,34 @@ M2 ; End program`
       <div className="mt-6">
         <h3 className="text-lg font-medium mb-3">Quick Text Templates</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {["A", "B", "C", "TEAM", "2025", "CUSTOM TEXT", "LOGO HERE", "#1"].map((template) => (
+          {[
+            "A",
+            "B",
+            "C",
+            "TEAM",
+            "2025",
+            "CUSTOM TEXT",
+            "LOGO HERE",
+            "#1",
+          ].map((template) => (
             <Card
               key={template}
               className="cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => setTextContent(template)}
             >
               <CardContent className="p-3 text-center">
-                <p className={`font-${template === textContent ? "bold" : "normal"}`}>{template}</p>
+                <p
+                  className={`font-${
+                    template === textContent ? "bold" : "normal"
+                  }`}
+                >
+                  {template}
+                </p>
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
     </div>
-  )
+  );
 }

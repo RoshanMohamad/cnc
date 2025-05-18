@@ -6,11 +6,14 @@ const nextConfig: NextConfig = {
 
 export default nextConfig;
 
-const path = require("path");
-
 module.exports = {
-  webpack: (config:any) => {
-    config.resolve.alias["@"] = path.resolve(__dirname, "src");
-    return config;
-  },
+  reactStrictMode: true,
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://192.168.8.130/:path*',
+      },
+    ];
+  }
 };

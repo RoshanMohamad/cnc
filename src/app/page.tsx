@@ -4,10 +4,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Scissors, FileCode, Send, Library, Plus } from "lucide-react"
 
-export const metadata = {
-  title: "Tech Titans",
-  description: "cnc tshirt cutting patterns and print design positioning",
-};
 
 export default function Home() {
   return (
