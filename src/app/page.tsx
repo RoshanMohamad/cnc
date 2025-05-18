@@ -33,7 +33,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-2">
-                  <Button asChild className="w-full justify-start">
+                  <Button asChild className="w-full bg-blue-600 justify-start">
                     <Link href="/designer/new">
                       <Plus className="mr-2 h-4 w-4" />
                       New T-Shirt Design
