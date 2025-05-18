@@ -32,7 +32,7 @@ export default function MachinesPage() {
       id: 2,
       name: "Cutter #2",
       type: "Network",
-      address: "192.168.1.100",
+      address: "192.168.8.130",
       port: "8080",
       status: "disconnected",
       lastConnected: "Apr 1, 2025",
