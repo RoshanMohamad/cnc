@@ -39,6 +39,10 @@ export default function DesignerPage({ params }: { params: Promise<{ id: string 
   const [showGrid, setShowGrid] = useState(true)
   const [gcode, setGcode] = useState("")
   const [id, setId] = useState<string | null>(null)
+  // New state for machine interaction
+  const [machineId, setMachineId] = useState("ESP32_IP_ADDRESS") // Default or get from user/config
+  const [isSending, setIsSending] = useState(false)
+  const [sendStatus, setSendStatus] = useState<string | null>(null)
 
   // T-shirt properties
   const [tshirtSize, setTshirtSize] = useState("M")
@@ -381,6 +385,41 @@ M2 ; End program`
     })
   }
 
+  // Handle sending G-code to the machine via the backend API
+  const handleSendToMachine = async () => {
+    if (!gcode) {
+      alert("Please generate G-code first.")
+      return
+    }
+    if (!machineId) {
+      alert("Please enter a Machine ID (e.g., ESP32 IP Address).")
+      return
+    }
+
+    setIsSending(true)
+    setSendStatus("Sending G-code...")
+
+    try {
+      const response = await fetch("/api/machines/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ machineId, gcode }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || `Failed to send G-code. Server responded with ${response.status}`)
+      }
+      setSendStatus(`Successfully sent G-code! ESP32 says: ${data.esp32Response || "OK"}`)
+    } catch  {
+      setSendStatus(`Error`)
+      console.error("Error sending G-code:")
+    } finally {
+      setIsSending(false)
+    }
+  }
+
   return (
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
@@ -396,9 +435,9 @@ M2 ; End program`
             <FileCode className="mr-2 h-4 w-4" />
             Generate G-code
           </Button>
-          <Button>
+          <Button onClick={handleSendToMachine} disabled={isSending}>
             <Send className="mr-2 h-4 w-4" />
-            Send to Machine
+            {isSending ? "Sending..." : "Send to Machine"}
           </Button>
         </div>
       </div>
@@ -418,6 +457,22 @@ M2 ; End program`
             </Button>
           ))}
         </div>
+      </div>
+
+      {/* Machine ID Input and Status */}
+      <div className="mb-6 p-4 border rounded-lg bg-card">
+        <Label htmlFor="machine-id" className="mb-2 block font-medium">Target Machine ID (ESP32 IP)</Label>
+        <Input
+          id="machine-id"
+          value={machineId}
+          onChange={(e) => setMachineId(e.target.value)}
+          placeholder="e.g., 192.168.1.100"
+          className="mb-2"
+          disabled={isSending}
+        />
+        {sendStatus && (
+          <p className={`text-sm ${sendStatus.startsWith("Error") ? "text-red-500" : "text-green-500"}`}>{sendStatus}</p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -774,4 +829,3 @@ M2 ; End program`
     </div>
   )
 }
-
