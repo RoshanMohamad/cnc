@@ -40,7 +40,7 @@ export default function DesignerPage({ params }: { params: Promise<{ id: string 
   const [gcode, setGcode] = useState("")
   const [id, setId] = useState<string | null>(null)
   // New state for machine interaction
-  const [machineId, setMachineId] = useState("ESP32_IP_ADDRESS") // Default or get from user/config
+  const [machineId, setMachineId] = useState("192.168.8.130") // Default or get from user/config
   const [isSending, setIsSending] = useState(false)
   const [sendStatus, setSendStatus] = useState<string | null>(null)
 
