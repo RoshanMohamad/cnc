@@ -13,7 +13,7 @@ import { Scissors, FileCode, Send, Library, Plus } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="container mx-auto py-10">
+    <div className="px-8 bg-blue-100 mx-auto py-10">
       <header className="mb-10">
         <h1 className="text-4xl font-bold tracking-tight">T-ShirtCraft</h1>
         <p className="text-muted-foreground mt-2">
@@ -39,7 +39,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-2">
-                  <Button asChild className="w-full bg-blue-600 justify-start">
+                  <Button asChild className="w-fulljustify-start">
                     <Link href="/designer/new">
                       <Plus className="mr-2 h-4 w-4" />
                       New T-Shirt Design
