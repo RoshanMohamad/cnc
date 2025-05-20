@@ -441,15 +441,23 @@ M2 ; End program`;
     setSendStatus("Sending G-code...");
 
     try {
-      const res = await fetch("http://192.168.8.130/api/gcode", {
+      // Construct the URL using the machineId from state
+      // Ensure your ESP32 is listening on /api/gcode or adjust the path accordingly
+      const res = await fetch(`http://${machineId}/api/gcode`, {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
-        body: "G1 X10 Y10",
+        body: gcode, // Send the actual generated G-code
       });
-      if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-      console.log(await res.text());
+
+      const responseText = await res.text(); // Get response from machine
+      if (!res.ok) {
+        throw new Error(`Machine responded with ${res.status}: ${responseText}`);
+      }
+      setSendStatus(`Successfully sent to ${machineId}. Machine says: ${responseText}`);
+      console.log("Machine response:", responseText);
     } catch (err) {
       console.error("Fetch failed:", err);
+      setSendStatus(`Error sending to ${machineId}: ${'error'}`);
     } finally {
       setIsSending(false);
     }
@@ -470,7 +478,7 @@ M2 ; End program`;
             <FileCode className="mr-2 h-4 w-4" />
             Generate G-code
           </Button>
-          <Button onClick={handleSendToMachine} disabled={isSending}>
+          <Button onClick={handleSendToMachine} disabled={isSending || !gcode}>
             <Send className="mr-2 h-4 w-4" />
             {isSending ? "Sending..." : "Send to Machine"}
           </Button>
@@ -510,7 +518,9 @@ M2 ; End program`;
         {sendStatus && (
           <p
             className={`text-sm ${
-              sendStatus.startsWith("Error") ? "text-red-500" : "text-green-500"
+              sendStatus.toLowerCase().startsWith("error") || sendStatus.toLowerCase().includes("failed")
+                ? "text-red-500"
+                : "text-green-500"
             }`}
           >
             {sendStatus}

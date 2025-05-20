@@ -1,16 +1,24 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Scissors, FileCode, Send, Library, Plus } from "lucide-react"
-
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Scissors, FileCode, Send, Library, Plus } from "lucide-react";
 
 export default function Home() {
   return (
     <div className="container mx-auto py-10">
       <header className="mb-10">
         <h1 className="text-4xl font-bold tracking-tight">T-ShirtCraft</h1>
-        <p className="text-muted-foreground mt-2">T-shirt cutting patterns and print design positioning</p>
+        <p className="text-muted-foreground mt-2">
+          T-shirt cutting patterns and print design positioning
+        </p>
       </header>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
@@ -24,7 +32,9 @@ export default function Home() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Quick Actions
+                </CardTitle>
                 <Scissors className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -35,13 +45,21 @@ export default function Home() {
                       New T-Shirt Design
                     </Link>
                   </Button>
-                  <Button asChild variant="outline" className="w-full justify-start">
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="w-full justify-start"
+                  >
                     <Link href="/designs">
                       <Library className="mr-2 h-4 w-4" />
                       Browse Designs
                     </Link>
                   </Button>
-                  <Button asChild variant="outline" className="w-full justify-start">
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="w-full justify-start"
+                  >
                     <Link href="/machines">
                       <Send className="mr-2 h-4 w-4" />
                       Connect Machine
@@ -53,19 +71,26 @@ export default function Home() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Recent Designs</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Recent Designs
+                </CardTitle>
                 <FileCode className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {["Classic Fit - M", "Slim Fit - L", "Oversized - XL"].map((pattern, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <span className="text-sm">{pattern}</span>
-                      <Button variant="ghost" size="sm">
-                        Open
-                      </Button>
-                    </div>
-                  ))}
+                  {["Classic Fit - M", "Slim Fit - L", "Oversized - XL"].map(
+                    (pattern, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="text-sm">{pattern}</span>
+                        <Button variant="ghost" size="sm">
+                          Open
+                        </Button>
+                      </div>
+                    )
+                  )}
                 </div>
               </CardContent>
               <CardFooter>
@@ -77,24 +102,29 @@ export default function Home() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Machine Status</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Machine Status
+                </CardTitle>
                 <Send className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   <div className="flex items-center">
                     <span className="h-2 w-2 rounded-full bg-red-500 mr-2"></span>
-                    <span className="text-sm">Cutter #1 - Disconnected</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="h-2 w-2 rounded-full bg-red-500 mr-2"></span>
-                    <span className="text-sm">Cutter #2 - Disconnected</span>
+                    <span className="text-sm">Cutter - Disconnected</span>
                   </div>
                 </div>
               </CardContent>
               <CardFooter>
-                <Button variant="outline" size="sm" className="w-full">
-                  Connect Machine
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full justify-start"
+                >
+                  <Link href="/machines">
+                    <Send className="mr-2 h-4 w-4" />
+                    Connect Machine
+                  </Link>
                 </Button>
               </CardFooter>
             </Card>
@@ -105,36 +135,55 @@ export default function Home() {
               <CardHeader>
                 <CardTitle>Getting Started</CardTitle>
                 <CardDescription>
-                  New to T-ShirtCraft? Follow these steps to create your first t-shirt design.
+                  New to T-ShirtCraft? Follow these steps to create your first
+                  t-shirt design.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full border bg-muted">1</div>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full border bg-muted">
+                      1
+                    </div>
                     <div className="ml-4">
-                      <h3 className="text-sm font-medium">Select a t-shirt size template</h3>
-                      <p className="text-sm text-muted-foreground">Choose from standard sizes (S, M, L, XL, etc.)</p>
+                      <h3 className="text-sm font-medium">
+                        Select a t-shirt size template
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Choose from standard sizes (S, M, L, XL, etc.)
+                      </p>
                     </div>
                   </div>
                   <div className="flex">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full border bg-muted">2</div>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full border bg-muted">
+                      2
+                    </div>
                     <div className="ml-4">
-                      <h3 className="text-sm font-medium">Upload your print design</h3>
-                      <p className="text-sm text-muted-foreground">Add your artwork and position it on the t-shirt</p>
+                      <h3 className="text-sm font-medium">
+                        Upload your print design
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Add your artwork and position it on the t-shirt
+                      </p>
                     </div>
                   </div>
                   <div className="flex">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full border bg-muted">3</div>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full border bg-muted">
+                      3
+                    </div>
                     <div className="ml-4">
-                      <h3 className="text-sm font-medium">Generate cutting pattern</h3>
+                      <h3 className="text-sm font-medium">
+                        Generate cutting pattern
+                      </h3>
                       <p className="text-sm text-muted-foreground">
                         Convert your design to machine-readable instructions
                       </p>
                     </div>
                   </div>
                   <div className="flex">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full border bg-muted">4</div>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full border bg-muted">
+                      4
+                    </div>
                     <div className="ml-4">
                       <h3 className="text-sm font-medium">Send to machine</h3>
                       <p className="text-sm text-muted-foreground">
@@ -154,7 +203,9 @@ export default function Home() {
             <Card className="col-span-1">
               <CardHeader>
                 <CardTitle>T-Shirt Size Guide</CardTitle>
-                <CardDescription>Standard measurements for different t-shirt sizes</CardDescription>
+                <CardDescription>
+                  Standard measurements for different t-shirt sizes
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -216,12 +267,42 @@ export default function Home() {
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[
-              { name: "Classic Fit - M", date: "Apr 2, 2025", print: "Mountain Logo", size: "M" },
-              { name: "Slim Fit - L", date: "Mar 28, 2025", print: "Abstract Pattern", size: "L" },
-              { name: "Oversized - XL", date: "Mar 15, 2025", print: "Company Logo", size: "XL" },
-              { name: "V-Neck - S", date: "Feb 20, 2025", print: "Floral Design", size: "S" },
-              { name: "Crew Neck - XXL", date: "Feb 10, 2025", print: "Text Only", size: "XXL" },
-              { name: "Athletic Fit - M", date: "Jan 5, 2025", print: "Geometric Pattern", size: "M" },
+              {
+                name: "Classic Fit - M",
+                date: "Apr 2, 2025",
+                print: "Mountain Logo",
+                size: "M",
+              },
+              {
+                name: "Slim Fit - L",
+                date: "Mar 28, 2025",
+                print: "Abstract Pattern",
+                size: "L",
+              },
+              {
+                name: "Oversized - XL",
+                date: "Mar 15, 2025",
+                print: "Company Logo",
+                size: "XL",
+              },
+              {
+                name: "V-Neck - S",
+                date: "Feb 20, 2025",
+                print: "Floral Design",
+                size: "S",
+              },
+              {
+                name: "Crew Neck - XXL",
+                date: "Feb 10, 2025",
+                print: "Text Only",
+                size: "XXL",
+              },
+              {
+                name: "Athletic Fit - M",
+                date: "Jan 5, 2025",
+                print: "Geometric Pattern",
+                size: "M",
+              },
             ].map((design, i) => (
               <Card key={i}>
                 <CardHeader className="pb-2">
@@ -230,9 +311,13 @@ export default function Home() {
                 </CardHeader>
                 <CardContent className="pb-2">
                   <div className="aspect-video rounded-md bg-muted flex flex-col items-center justify-center p-4">
-                    <div className="text-muted-foreground text-xs mb-2">Size: {design.size}</div>
+                    <div className="text-muted-foreground text-xs mb-2">
+                      Size: {design.size}
+                    </div>
                     <div className="w-24 h-32 border-2 border-dashed border-muted-foreground flex items-center justify-center">
-                      <div className="text-xs text-center text-muted-foreground">{design.print}</div>
+                      <div className="text-xs text-center text-muted-foreground">
+                        {design.print}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -256,31 +341,29 @@ export default function Home() {
             </Button>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            {[
-              { name: "Cutter #1", type: "USB Serial", status: "Disconnected" },
-              { name: "Cutter #2", type: "Network", status: "Disconnected" },
-            ].map((machine, i) => (
-              <Card key={i}>
-                <CardHeader>
-                  <CardTitle>{machine.name}</CardTitle>
-                  <CardDescription>{machine.type} Connection</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center">
-                    <span className="h-2 w-2 rounded-full bg-red-500 mr-2"></span>
-                    <span>Status: {machine.status}</span>
-                  </div>
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Button variant="outline">Configure</Button>
-                  <Button>Connect</Button>
-                </CardFooter>
-              </Card>
-            ))}
+            {[{ name: "Cutter", type: "Network", status: "Disconnected" }].map(
+              (machine, i) => (
+                <Card key={i}>
+                  <CardHeader>
+                    <CardTitle>{machine.name}</CardTitle>
+                    <CardDescription>{machine.type} Connection</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center">
+                      <span className="h-2 w-2 rounded-full bg-red-500 mr-2"></span>
+                      <span>Status: {machine.status}</span>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <Button variant="outline">Configure</Button>
+                    <Button>Connect</Button>
+                  </CardFooter>
+                </Card>
+              )
+            )}
           </div>
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
-

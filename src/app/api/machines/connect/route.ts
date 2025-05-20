@@ -3,13 +3,6 @@ import { type NextRequest, NextResponse } from "next/server"
 export async function POST(request: NextRequest) {
   try {
     const { machineId } = await request.json()
-
-    // In a real application, this would attempt to connect to the actual machine
-    // using the provided connection details
-
-    // For demonstration purposes, we're simulating a successful connection
-
-    // Simulate connection delay
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     // Return success response

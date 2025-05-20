@@ -21,14 +21,6 @@ import { AlertCircle, CheckCircle2, Plus, RefreshCw, Send, Settings, Trash2, Wif
 export default function MachinesPage() {
   const [machines, setMachines] = useState([
     {
-      id: 1,
-      name: "Cutter #1",
-      type: "USB Serial",
-      port: "/dev/ttyUSB0",
-      status: "disconnected",
-      lastConnected: "Never",
-    },
-    {
       id: 2,
       name: "Cutter #2",
       type: "Network",
