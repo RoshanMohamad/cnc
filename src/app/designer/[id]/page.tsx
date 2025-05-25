@@ -350,58 +350,36 @@ export default function DesignerPage({
     const baseLength = 700 * multiplier * styleAdj.length;
     const neckSize = 100 * multiplier;
 
-    const sampleGcode = `; T-ShirtCraft G-code for ${tshirtStyle} T-shirt, Size ${tshirtSize}
-; Generated on ${new Date().toLocaleString()}
-; Text design: "${textContent}"
-; Font: ${textFont} ${textBold ? "Bold" : ""} ${textItalic ? "Italic" : ""}
+    const sampleGcode = `
+Generated on ${new Date().toLocaleString()}
+G21 ;
+G90 ; 
+G92 X0 Y0 Z0 ;
+F1000 ;
+Z5 ;
+G0 X400 Y100 ; 
+Z0 ; 
+G2 X${400 - neckSize} Y100 I-${neckSize} J0 ;
+G1 X${400 - baseWidth / 2} Y150 ; 
+G1 X${400 - baseWidth / 2} Y${100 + baseLength} ;
+G1 X${400 + baseWidth / 2} Y${100 + baseLength} ;
+G1 X${400 + baseWidth / 2} Y150 ;
+G1 X${400 + neckSize} Y100 ;
+G2 X400 Y100 I-${neckSize} J0 ;
+G0 X${400 - baseWidth / 2} Y150 ;
+Z0 ; 
+G1 X${400 - baseWidth / 2 - 200} Y250 ;
+G1 X${400 - baseWidth / 2 - 100} Y250 ; 
+G1 X${400 - baseWidth / 2} Y200 ; 
+G0 X${400 + baseWidth / 2} Y150 ; 
+Z0 ;
+G1 X${400 + baseWidth / 2 + 200} Y250 ; 
+G1 X${400 + baseWidth / 2 + 100} Y250 ;
+G1 X${400 + baseWidth / 2} Y200 ; 
 
-G21 ; Set units to millimeters
-G90 ; Set to absolute positioning
-G92 X0 Y0 Z0 ; Set current position as origin
-
-; Cutting speed and depth
-F1000 ; Set feed rate
-Z5 ; Raise cutter
-
-; Start with neck
-G0 X400 Y100 ; Move to start position
-Z0 ; Lower cutter
-G2 X${400 - neckSize} Y100 I-${neckSize} J0 ; Cut neck curve (clockwise arc)
-
-; Left shoulder and side
-G1 X${400 - baseWidth / 2} Y150 ; Cut to left shoulder
-G1 X${400 - baseWidth / 2} Y${100 + baseLength} ; Cut down left side
-
-; Bottom
-G1 X${400 + baseWidth / 2} Y${100 + baseLength} ; Cut across bottom
-
-; Right side and shoulder
-G1 X${400 + baseWidth / 2} Y150 ; Cut up right side
-G1 X${400 + neckSize} Y100 ; Cut to right shoulder
-
-; Complete neck
-G2 X400 Y100 I-${neckSize} J0 ; Complete neck curve
-
-; Left sleeve
-G0 X${400 - baseWidth / 2} Y150 ; Move to left shoulder
-Z0 ; Lower cutter
-G1 X${400 - baseWidth / 2 - 200} Y250 ; Cut sleeve outer edge
-G1 X${400 - baseWidth / 2 - 100} Y250 ; Cut sleeve bottom
-G1 X${400 - baseWidth / 2} Y200 ; Cut sleeve inner edge
-
-; Right sleeve
-G0 X${400 + baseWidth / 2} Y150 ; Move to right shoulder
-Z0 ; Lower cutter
-G1 X${400 + baseWidth / 2 + 200} Y250 ; Cut sleeve outer edge
-G1 X${400 + baseWidth / 2 + 100} Y250 ; Cut sleeve bottom
-G1 X${400 + baseWidth / 2} Y200 ; Cut sleeve inner edge
-
-; Mark text area for printing
-G0 Z5 ; Raise cutter
-G0 X${textPosition.x} Y${textPosition.y} ; Move to text center position
-Z1 ; Lower marker slightly
-
-; Text marking instructions for printing machine
+G0 Z5 ;
+G0 X${textPosition.x} Y${textPosition.y} ;
+Z1 ; 
 ; Text: "${textContent}"
 ; Position: X${textPosition.x} Y${textPosition.y}
 ; Scale: ${textScale}%
@@ -409,11 +387,9 @@ Z1 ; Lower marker slightly
 ; Font: ${textFont} ${textBold ? "Bold" : ""} ${textItalic ? "Italic" : ""}
 ; Color: ${textColor}
 ; Alignment: ${textAlign}
-
-; End
-G0 Z10 ; Raise cutter
-G0 X0 Y0 ; Return to origin
-M2 ; End program`;
+G0 Z10 ; 
+G0 X0 Y0 ; 
+M2 ;  `;
 
     setGcode(sampleGcode);
   };

@@ -21,8 +21,8 @@ import { AlertCircle, CheckCircle2, Plus, RefreshCw, Send, Settings, Trash2, Wif
 export default function MachinesPage() {
   const [machines, setMachines] = useState([
     {
-      id: 2,
-      name: "Cutter #2",
+      id: 1,
+      name: "Cutter",
       type: "Network",
       address: "192.168.8.130",
       port: "8080",
