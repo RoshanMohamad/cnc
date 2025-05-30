@@ -53,8 +53,8 @@ export async function POST(request: NextRequest) {
       tshirtSize: body.tshirtSize ?? "M",
       tshirtStyle: body.tshirtStyle ?? "classic",
       textContent: body.textContent ?? "SAMPLE TEXT",
-      textPosition: body.textPosition ?? { x: 400, y: 250 },
-      textScale: body.textScale ?? 100,
+      textPosition: body.textPosition ?? { x: 4, y: 2.5 },
+      textScale: body.textScale ?? 1,
       textRotation: body.textRotation ?? 0,
       textFont: body.textFont ?? "Arial",
       textBold: body.textBold ?? false,
@@ -159,9 +159,9 @@ function generateTshirtGcode(data: TShirtSpecs): string {
   const styleAdj = styleAdjustments[tshirtStyle] ?? styleAdjustments.classic;
 
   // Base dimensions in mm
-  const baseWidth = 600 * multiplier * styleAdj.width;
-  const baseLength = 700 * multiplier * styleAdj.length;
-  const neckSize = 100 * multiplier;
+  const baseWidth = 3 * multiplier * styleAdj.width;
+  const baseLength = 3.5 * multiplier * styleAdj.length;
+  const neckSize = 0.5 * multiplier;
 
   return `; T-ShirtCraft G-code for ${tshirtStyle} T-shirt, Size ${tshirtSize}
 ; Generated on ${new Date().toLocaleString()}
@@ -180,37 +180,37 @@ F${speed} ; Set feed rate
 Z5 ; Raise cutter
 
 ; Start with neck
-G0 X400 Y100 ; Move to start position
+G0 X4 Y1 ; Move to start position
 Z0 ; Lower cutter
-G2 X${400 - neckSize} Y100 I-${neckSize} J0 ; Cut neck curve (clockwise arc)
+G2 X${4 - neckSize} Y1 I-${neckSize} J0 ; Cut neck curve (clockwise arc)
 
 ; Left shoulder and side
-G1 X${400 - baseWidth / 2} Y150 ; Cut to left shoulder
-G1 X${400 - baseWidth / 2} Y${100 + baseLength} ; Cut down left side
+G1 X${4 - baseWidth / 2} Y1.5 ; Cut to left shoulder
+G1 X${4 - baseWidth / 2} Y${1 + baseLength} ; Cut down left side
 
 ; Bottom
-G1 X${400 + baseWidth / 2} Y${100 + baseLength} ; Cut across bottom
+G1 X${4 + baseWidth / 2} Y${1 + baseLength} ; Cut across bottom
 
 ; Right side and shoulder
-G1 X${400 + baseWidth / 2} Y150 ; Cut up right side
-G1 X${400 + neckSize} Y100 ; Cut to right shoulder
+G1 X${4 + baseWidth / 2} Y1.5 ; Cut up right side
+G1 X${4 + neckSize} Y1 ; Cut to right shoulder
 
 ; Complete neck
-G2 X400 Y100 I-${neckSize} J0 ; Complete neck curve
+G2 X4 Y1 I-${neckSize} J0 ; Complete neck curve
 
 ; Left sleeve
-G0 X${400 - baseWidth / 2} Y150 ; Move to left shoulder
+G0 X${4 - baseWidth / 2} Y1.5 ; Move to left shoulder
 Z0 ; Lower cutter
-G1 X${400 - baseWidth / 2 - 200} Y250 ; Cut sleeve outer edge
-G1 X${400 - baseWidth / 2 - 100} Y250 ; Cut sleeve bottom
-G1 X${400 - baseWidth / 2} Y200 ; Cut sleeve inner edge
+G1 X${4 - baseWidth / 2 - 2} Y2.5 ; Cut sleeve outer edge
+G1 X${4 - baseWidth / 2 - 1} Y2.5 ; Cut sleeve bottom
+G1 X${4 - baseWidth / 2} Y2 ; Cut sleeve inner edge
 
 ; Right sleeve
-G0 X${400 + baseWidth / 2} Y150 ; Move to right shoulder
+G0 X${4 + baseWidth / 2} Y1.5 ; Move to right shoulder
 Z0 ; Lower cutter
-G1 X${400 + baseWidth / 2 + 200} Y250 ; Cut sleeve outer edge
-G1 X${400 + baseWidth / 2 + 100} Y250 ; Cut sleeve bottom
-G1 X${400 + baseWidth / 2} Y200 ; Cut sleeve inner edge
+G1 X${4 + baseWidth / 2 + 2} Y2.5 ; Cut sleeve outer edge
+G1 X${4 + baseWidth / 2 + 1} Y2.5 ; Cut sleeve bottom
+G1 X${4 + baseWidth / 2} Y2 ; Cut sleeve inner edge
 
 ; Mark text area for printing
 G0 Z5 ; Raise cutter

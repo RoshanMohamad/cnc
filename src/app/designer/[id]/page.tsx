@@ -55,7 +55,7 @@ export default function DesignerPage({
   const [gcode, setGcode] = useState("");
   const [id, setId] = useState<string | null>(null);
   // New state for machine interaction
-  const [machineId, setMachineId] = useState("192.168.8.130"); // Default or get from user/config
+  const [machineId, setMachineId] = useState("192.168.91.44"); // Default or get from user/config
   const [isSending, setIsSending] = useState(false);
   const [sendStatus, setSendStatus] = useState<string | null>(null);
 
@@ -65,8 +65,8 @@ export default function DesignerPage({
 
   // Text design properties
   const [textContent, setTextContent] = useState("SAMPLE TEXT");
-  const [textPosition, setTextPosition] = useState({ x: 400, y: 250 });
-  const [textScale, setTextScale] = useState(100);
+  const [textPosition, setTextPosition] = useState({ x: 4, y: 2.5 });
+  const [textScale, setTextScale] = useState(1);
   const [textRotation, setTextRotation] = useState(0);
   const [textFont, setTextFont] = useState("Arial");
   const [textColor, setTextColor] = useState("#000000");
@@ -153,7 +153,7 @@ export default function DesignerPage({
     ctx.lineWidth = 1;
 
     // Draw vertical lines
-    for (let x = 0; x <= width; x += 20) {
+    for (let x = 0; x <= width; x += 2) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, height);
@@ -161,7 +161,7 @@ export default function DesignerPage({
     }
 
     // Draw horizontal lines
-    for (let y = 0; y <= height; y += 20) {
+    for (let y = 0; y <= height; y += 2) {
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(width, y);
@@ -199,16 +199,16 @@ export default function DesignerPage({
     const styleAdj = styleAdjustments[style] || styleAdjustments.classic;
 
     ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 0.2;
 
     // Base dimensions
-    const baseWidth = 300 * multiplier * styleAdj.width;
-    const baseLength = 350 * multiplier * styleAdj.length;
-    const neckSize = 50 * multiplier * styleAdj.neckSize;
+    const baseWidth = 3 * multiplier * styleAdj.width;
+    const baseLength = 3.5 * multiplier * styleAdj.length;
+    const neckSize = 0.5 * multiplier * styleAdj.neckSize;
 
     // Center position
-    const centerX = 400;
-    const topY = 100;
+    const centerX = 4;
+    const topY = 1;
 
     // Neck
     ctx.beginPath();
@@ -220,14 +220,14 @@ export default function DesignerPage({
     ctx.moveTo(centerX - neckSize, topY);
     ctx.arcTo(
       centerX - baseWidth / 2,
-      topY + 50,
+      topY + 0.5,
       centerX - baseWidth / 2,
       topY + baseLength,
-      20
+      0.2
     ); // Left shoulder rounded
     ctx.lineTo(centerX - baseWidth / 2, topY + baseLength);
     ctx.lineTo(centerX + baseWidth / 2, topY + baseLength);
-    ctx.arcTo(centerX + baseWidth / 2, topY + 50, centerX + neckSize, topY, 20); // Right shoulder rounded
+    ctx.arcTo(centerX + baseWidth / 2, topY + 0.5, centerX + neckSize, topY, 0.2); // Right shoulder rounded
     ctx.lineTo(centerX + neckSize, topY);
     ctx.stroke();
 
@@ -252,8 +252,8 @@ export default function DesignerPage({
     ctx.font = "16px sans-serif";
     ctx.fillText(
       `Size: ${size} (${style})`,
-      centerX - 60,
-      topY + baseLength + 30
+      centerX - 0.6,
+      topY + baseLength + 0.3
     );
   };
 
@@ -281,14 +281,14 @@ export default function DesignerPage({
     // Set text properties
     const fontStyle = `${italic ? "italic " : ""}${
       bold ? "bold " : ""
-    }${Math.round(36 * scaleFactor)}px ${font}, sans-serif`;
+    }${Math.round(3.6 * scaleFactor)}px ${font}, sans-serif`;
     ctx.font = fontStyle;
     ctx.fillStyle = color;
     ctx.textAlign = align as CanvasTextAlign;
 
     // Draw text
     const lines = text.split("\n");
-    const lineHeight = 40;
+    const lineHeight = 4;
 
     lines.forEach((line, index) => {
       const yOffset = (index - (lines.length - 1) / 2) * lineHeight;
@@ -300,7 +300,7 @@ export default function DesignerPage({
       ...lines.map((line) => ctx.measureText(line).width)
     );
     const textHeight = lines.length * lineHeight;
-    const boxPadding = 10;
+    const boxPadding = 1;
 
     ctx.strokeStyle = "#cccccc";
     ctx.lineWidth = 1;
@@ -346,9 +346,9 @@ export default function DesignerPage({
     const styleAdj = styleAdjustments[tshirtStyle] || styleAdjustments.classic;
 
     // Base dimensions in mm
-    const baseWidth = 600 * multiplier * styleAdj.width;
-    const baseLength = 700 * multiplier * styleAdj.length;
-    const neckSize = 100 * multiplier;
+    const baseWidth = 3 * multiplier * styleAdj.width;
+    const baseLength = 3.5 * multiplier * styleAdj.length;
+    const neckSize = 0.5 * multiplier;
 
     const sampleGcode = `; T-ShirtCraft G-code for ${tshirtStyle} T-shirt, Size ${tshirtSize}
 ; Generated on ${new Date().toLocaleString()}
@@ -364,37 +364,37 @@ F1000 ; Set feed rate
 Z5 ; Raise cutter
 
 ; Start with neck
-G0 X400 Y100 ; Move to start position
+G0 X4 Y1 ; Move to start position
 Z0 ; Lower cutter
-G2 X${400 - neckSize} Y100 I-${neckSize} J0 ; Cut neck curve (clockwise arc)
+G2 X${4 - neckSize} Y1 I-${neckSize} J0 ; Cut neck curve (clockwise arc)
 
 ; Left shoulder and side
-G1 X${400 - baseWidth / 2} Y150 ; Cut to left shoulder
-G1 X${400 - baseWidth / 2} Y${100 + baseLength} ; Cut down left side
+G1 X${4 - baseWidth / 2} Y1.5 ; Cut to left shoulder
+G1 X${4 - baseWidth / 2} Y${1 + baseLength} ; Cut down left side
 
 ; Bottom
-G1 X${400 + baseWidth / 2} Y${100 + baseLength} ; Cut across bottom
+G1 X${4 + baseWidth / 2} Y${1 + baseLength} ; Cut across bottom
 
 ; Right side and shoulder
-G1 X${400 + baseWidth / 2} Y150 ; Cut up right side
-G1 X${400 + neckSize} Y100 ; Cut to right shoulder
+G1 X${4 + baseWidth / 2} Y1.5 ; Cut up right side
+G1 X${4 + neckSize} Y1 ; Cut to right shoulder
 
 ; Complete neck
-G2 X400 Y100 I-${neckSize} J0 ; Complete neck curve
+G2 X4 Y1 I-${neckSize} J0 ; Complete neck curve
 
 ; Left sleeve
-G0 X${400 - baseWidth / 2} Y150 ; Move to left shoulder
+G0 X${4 - baseWidth / 2} Y1.5 ; Move to left shoulder
 Z0 ; Lower cutter
-G1 X${400 - baseWidth / 2 - 200} Y250 ; Cut sleeve outer edge
-G1 X${400 - baseWidth / 2 - 100} Y250 ; Cut sleeve bottom
-G1 X${400 - baseWidth / 2} Y200 ; Cut sleeve inner edge
+G1 X${4 - baseWidth / 2 - 2} Y2.5 ; Cut sleeve outer edge
+G1 X${4 - baseWidth / 2 - 1} Y2.5 ; Cut sleeve bottom
+G1 X${4 - baseWidth / 2} Y2 ; Cut sleeve inner edge
 
 ; Right sleeve
-G0 X${400 + baseWidth / 2} Y150 ; Move to right shoulder
+G0 X${4 + baseWidth / 2} Y1.5 ; Move to right shoulder
 Z0 ; Lower cutter
-G1 X${400 + baseWidth / 2 + 200} Y250 ; Cut sleeve outer edge
-G1 X${400 + baseWidth / 2 + 100} Y250 ; Cut sleeve bottom
-G1 X${400 + baseWidth / 2} Y200 ; Cut sleeve inner edge
+G1 X${4 + baseWidth / 2 + 2} Y2.5 ; Cut sleeve outer edge
+G1 X${4 + baseWidth / 2 + 1} Y2.5 ; Cut sleeve bottom
+G1 X${4 + baseWidth / 2} Y2 ; Cut sleeve inner edge
 
 ; Mark text area for printing
 G0 Z5 ; Raise cutter
