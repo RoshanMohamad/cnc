@@ -118,116 +118,123 @@ async function sendGcodeToESP32(machineId: string, gcode: string) {
 
 
 
-
 function generateTshirtGcode(data: TShirtSpecs): string {
   const {
     tshirtSize,
     tshirtStyle,
-    textContent,
-    textPosition,
-    textScale,
-    textRotation,
-    textFont,
-    textBold,
-    textItalic,
-    textAlign,
-    textColor,
-    material,
     thickness,
     speed,
   } = data;
 
-  // Size multipliers
-  const sizeMultipliers: Record<string, number> = {
-    XS: 0.9,
-    S: 0.95,
+  const sizeMultipliers: { [key: string]: number } = {
+    XS: 0.85,
+    S: 0.92,
     M: 1,
-    L: 1.05,
-    XL: 1.1,
-    XXL: 1.15,
+    L: 1.08,
+    XL: 1.16,
+    XXL: 1.24,
+  };
+  const styleMultipliers: { [key: string]: number } = {
+    classic: 1,
+    slim: 0.95,
+    oversized: 1.1,
+  };
+  const sizeMultiplier = sizeMultipliers[tshirtSize] || 1;
+  const styleMultiplier = styleMultipliers[tshirtStyle] || 1;
+
+  const dims = {
+    width: 460 * sizeMultiplier * styleMultiplier,
+    length: 600 * sizeMultiplier * styleMultiplier,
+    neckWidth: 160 * sizeMultiplier * styleMultiplier,
+    frontNeckDrop: 80 * sizeMultiplier * styleMultiplier,
+    backNeckDrop: 20 * sizeMultiplier * styleMultiplier,
+    sleeveLength: 200 * sizeMultiplier * styleMultiplier,
+    sleeveWidth: 220 * sizeMultiplier * styleMultiplier,
   };
 
-  const multiplier = sizeMultipliers[tshirtSize] ?? 1;
+  const zSafe = (thickness ?? 1) + 5;
+  const zCut = -(thickness ?? 1);
 
-  // Style adjustments
-  const styleAdjustments: Record<string, { width: number; length: number }> = {
-    classic: { width: 1, length: 1 },
-    slim: { width: 0.9, length: 1.05 },
-    oversized: { width: 1.2, length: 0.95 },
-  };
+  let
+    gcodeContent = `G21\n`;
+  gcodeContent += `G90\n`;
+  gcodeContent += `F2000\n`;
 
-  const styleAdj = styleAdjustments[tshirtStyle] ?? styleAdjustments.classic;
+  // --- INIT ---
+  gcodeContent += `M3 S255\n`;
+  gcodeContent += `G4 P1\n`;
 
-  // Base dimensions in mm
-  const baseWidth = 3 * multiplier * styleAdj.width;
-  const baseLength = 3.5 * multiplier * styleAdj.length;
-  const neckSize = 0.5 * multiplier;
+  // --- FRONT PIECE ---
+  gcodeContent += `M3 S200\n`; // Servo 2 on D10
+  gcodeContent += `M3 S0\n`;
+  gcodeContent += `G4 P1\n`;
+  gcodeContent += `G0 X300 Y350\n`;
+  gcodeContent += `G1 Z${Math.round(zCut)} F${speed}\n`;
+  gcodeContent += `G0 Z${Math.round(zSafe)}\n`;
+  gcodeContent += `M3 S255\n`;
+  gcodeContent += `M3 S128\n`;
+  gcodeContent += `G4 P1\n`;
+  // --- MOVE MATERIAL FOR BACK PIECE  ---
+  gcodeContent += `G91\n`;
+  gcodeContent += `G1 Z100 F1500\n`;
+  gcodeContent += `G90\n`;
+  gcodeContent += `M3 S0\n`;
+  gcodeContent += `G4 P1\n`;
+  gcodeContent += generatePieceGcodeAPI(
+    { x: 300 + dims.width + 50, y: 350 },
+    zCut,
+    zSafe,
+    speed ?? 800
+  );
+  gcodeContent += `M3 S255\n`;
+  gcodeContent += `G4 P1\n`;
+  gcodeContent += `G91\n`;
+  gcodeContent += `G1 Y100 F1000\n`;
+  gcodeContent += `G90\n`;
 
-  return `; T-ShirtCraft G-code for ${tshirtStyle} T-shirt, Size ${tshirtSize}
-; Generated on ${new Date().toLocaleString()}
-; Material: ${material}
-; Thickness: ${thickness}mm
-; Text design: "${textContent}"
-; Font: ${textFont} ${textBold ? "Bold" : ""} ${textItalic ? "Italic" : ""}
-; Color: ${textColor}
+  // --- LEFT SLEEVE ---
+  gcodeContent += `M3 S0\n`;
+  gcodeContent += `G4 P1\n`;
+  gcodeContent += generatePieceGcodeAPI(
+    { x: 300, y: 350 + dims.length + 50 },
+    zCut,
+    zSafe,
+    speed ?? 800
+  );
+  gcodeContent += `M3 S255\n`;
+  gcodeContent += `G4 P1\n`;
 
-G21 ; Set units to millimeters
-G90 ; Set to absolute positioning
-G92 X0 Y0 Z0 ; Set current position as origin
+  // --- RIGHT SLEEVE ---
+  gcodeContent += `M3 S0\n`;
+  gcodeContent += `G4 P1\n`;
+  gcodeContent += generatePieceGcodeAPI(
+    { x: 300 + dims.sleeveWidth + 50, y: 350 + dims.length + 50 },
+    zCut,
+    zSafe,
+    speed ?? 800
+  );
+  gcodeContent += `M3 S255\n`;
+  gcodeContent += `G4 P1\n`;
 
-; Cutting speed and depth
-F${speed} ; Set feed rate
-Z5 ; Raise cutter
+  // --- END OF PROGRAM ---
+  gcodeContent += `G0 Z${Math.round(zSafe)}\n`;
+  gcodeContent += `G0 X0 Y0\n`;
+  gcodeContent += `M30\n`;
 
-; Start with neck
-G0 X4 Y1 ; Move to start position
-Z0 ; Lower cutter
-G2 X${4 - neckSize} Y1 I-${neckSize} J0 ; Cut neck curve (clockwise arc)
-
-; Left shoulder and side
-G1 X${4 - baseWidth / 2} Y1.5 ; Cut to left shoulder
-G1 X${4 - baseWidth / 2} Y${1 + baseLength} ; Cut down left side
-
-; Bottom
-G1 X${4 + baseWidth / 2} Y${1 + baseLength} ; Cut across bottom
-
-; Right side and shoulder
-G1 X${4 + baseWidth / 2} Y1.5 ; Cut up right side
-G1 X${4 + neckSize} Y1 ; Cut to right shoulder
-
-; Complete neck
-G2 X4 Y1 I-${neckSize} J0 ; Complete neck curve
-
-; Left sleeve
-G0 X${4 - baseWidth / 2} Y1.5 ; Move to left shoulder
-Z0 ; Lower cutter
-G1 X${4 - baseWidth / 2 - 2} Y2.5 ; Cut sleeve outer edge
-G1 X${4 - baseWidth / 2 - 1} Y2.5 ; Cut sleeve bottom
-G1 X${4 - baseWidth / 2} Y2 ; Cut sleeve inner edge
-
-; Right sleeve
-G0 X${4 + baseWidth / 2} Y1.5 ; Move to right shoulder
-Z0 ; Lower cutter
-G1 X${4 + baseWidth / 2 + 2} Y2.5 ; Cut sleeve outer edge
-G1 X${4 + baseWidth / 2 + 1} Y2.5 ; Cut sleeve bottom
-G1 X${4 + baseWidth / 2} Y2 ; Cut sleeve inner edge
-
-; Mark text area for printing
-G0 Z5 ; Raise cutter
-G0 X${textPosition.x} Y${textPosition.y} ; Move to text center position
-Z1 ; Lower marker slightly
-
-; Text marking instructions for printing machine
-; Text: "${textContent}"
-; Position: X${textPosition.x} Y${textPosition.y}
-; Scale: ${textScale}%
-; Rotation: ${textRotation}°
-; Font: ${textFont} ${textBold ? "Bold" : ""} ${textItalic ? "Italic" : ""}
-; Color: ${textColor}
-; Alignment: ${textAlign}
-
-; End
-G0 Z10 ; Raise cutter
-G0 X0 Y0 ; Return to origin
-M2 ; End program`;
+  return gcodeContent;
 }
+
+// Helper function to match the placeholder in page.tsx
+function generatePieceGcodeAPI(
+  position: { x: number; y: number },
+  zCut: number,
+  zSafe: number,
+  speed: number
+) {
+  let 
+  g = `G0 X${Math.round(position.x)} Y${Math.round(position.y)}\n`;
+  g += `G1 Z${Math.round(zCut)} F${Math.round(speed / 2)}\n`; // Plunge
+  g += `G0 Z${Math.round(zSafe)}\n`; // Retract
+  return g;
+}
+
