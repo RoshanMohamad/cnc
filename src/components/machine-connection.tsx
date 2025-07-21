@@ -1,75 +1,100 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from "sonner" // Updated import
-import { Loader2, WifiOff } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner"; // Updated import
+import { Loader2, WifiOff } from "lucide-react";
+import { useWebSocketContext } from "./WebSocketProvider";
 
 export interface MachineConnectionDetails {
   id: string;
   name: string;
-  connectionType: 'usb' | 'network';
+  connectionType: "usb" | "network";
   port: string;
   address?: string;
-  status: 'connected' | 'disconnected' | 'error';
+  status: "connected" | "disconnected" | "error";
 }
 
 interface MachineConnectionProps {
   onConnect: (machineDetails: MachineConnectionDetails) => void; // No more any!
 }
 export function MachineConnection({ onConnect }: MachineConnectionProps) {
-  const [connectionType, setConnectionType] = useState("usb")
-  const [port, setPort] = useState("/dev/ttyUSB0")
-  const [address, setAddress] = useState("192.168.1.100")
-  const [networkPort, setNetworkPort] = useState("8080")
-  const [isConnecting, setIsConnecting] = useState(false)
+  const [connectionType, setConnectionType] = useState("usb");
+  const [port, setPort] = useState("/dev/ttyUSB0");
+  const [address, setAddress] = useState("192.168.1.100");
+  const [networkPort, setNetworkPort] = useState("8080");
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const { broadcastMachineStatus } = useWebSocketContext();
 
   const handleConnect = async () => {
-    setIsConnecting(true)
+    setIsConnecting(true);
 
     try {
       // Simulate connection
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       const machineDetails = {
         id: "machine-1",
-        name: connectionType === "usb" ? `USB Machine (${port})` : `Network Machine (${address})`,
+        name:
+          connectionType === "usb"
+            ? `USB Machine (${port})`
+            : `Network Machine (${address})`,
         connectionType,
         port: connectionType === "usb" ? port : networkPort,
         address: connectionType === "network" ? address : undefined,
         status: "connected",
-      }
+      };
+
+      // Broadcast machine connection via WebSocket
+      broadcastMachineStatus(machineDetails.id, "connected");
 
       // Updated Sonner toast
       toast.success(`Successfully connected to ${machineDetails.name}`, {
         description: "Machine is now ready for operation",
-      })
+      });
 
-      onConnect(machineDetails as MachineConnectionDetails) // No more any!
+      onConnect(machineDetails as MachineConnectionDetails); // No more any!
     } catch (error: unknown) {
-      console.error('Connection error:', error); // Now using error
-      toast.error(
-        error instanceof Error ? error.message : 'Connection failed'
-      );
+      console.error("Connection error:", error); // Now using error
+      toast.error(error instanceof Error ? error.message : "Connection failed");
     } finally {
-      setIsConnecting(false)
+      setIsConnecting(false);
     }
-  }
+  };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Connect to Machine</CardTitle>
-        <CardDescription>Configure your connection settings to connect to your cloth cutting machine</CardDescription>
+        <CardDescription>
+          Configure your connection settings to connect to your cloth cutting
+          machine
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col items-center justify-center py-6">
           <WifiOff className="h-16 w-16 text-muted-foreground mb-4" />
-          <p className="text-center text-muted-foreground">No machine is currently connected</p>
+          <p className="text-center text-muted-foreground">
+            No machine is currently connected
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -119,7 +144,11 @@ export function MachineConnection({ onConnect }: MachineConnectionProps) {
         )}
       </CardContent>
       <CardFooter>
-        <Button onClick={handleConnect} disabled={isConnecting} className="w-full">
+        <Button
+          onClick={handleConnect}
+          disabled={isConnecting}
+          className="w-full"
+        >
           {isConnecting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -131,6 +160,5 @@ export function MachineConnection({ onConnect }: MachineConnectionProps) {
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }
-

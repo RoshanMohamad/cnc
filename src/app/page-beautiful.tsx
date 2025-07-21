@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,7 +52,7 @@ export default function Home() {
                 Machines
               </Link>
               <Link
-                href="/designer/new"
+                href="/designer"
                 className="text-gray-600 hover:text-blue-600 transition-colors"
               >
                 G-Code Designer
@@ -107,12 +109,10 @@ export default function Home() {
               <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
               Start Machining
             </Button>
-            <Link href="/designer/new">
-              <Button variant="outline" size="lg">
-                <Layers className="w-5 h-5 mr-2" />
-                Design G-Code
-              </Button>
-            </Link>
+            <Button variant="outline" size="lg">
+              <Layers className="w-5 h-5 mr-2" />
+              Design G-Code
+            </Button>
           </div>
 
           {/* Live Statistics */}

@@ -279,174 +279,277 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
 
   // --- RENDER ---
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Left Panel: Controls */}
-      <div className="w-96 bg-white border-r p-4 overflow-y-auto">
-        <h1 className="text-2xl font-bold mb-4">T-Shirt CNC Designer</h1>
-        <Tabs defaultValue="tshirt">
-          <TabsList className="w-full">
-            <TabsTrigger value="tshirt" className="flex-1">
-              T-Shirt
-            </TabsTrigger>
-            <TabsTrigger value="text" className="flex-1">
-              Text
-            </TabsTrigger>
-            <TabsTrigger value="machine" className="flex-1">
-              Machine
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="tshirt" className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label htmlFor="design-name">Design Name</Label>
-              <Input
-                id="design-name"
-                value={tshirt.designName}
-                onChange={(e) =>
-                  setTshirt({ ...tshirt, designName: e.target.value })
-                }
-              />
+      <div className="w-96 bg-white/70 backdrop-blur-md border-r border-white/20 shadow-xl overflow-y-auto">
+        <div className="p-6 border-b border-white/20 bg-gradient-to-r from-blue-600/10 to-purple-600/10">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <FileCode className="w-5 h-5 text-white" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="tshirt-size">T-Shirt Size</Label>
-              <Select
-                value={tshirt.size}
-                onValueChange={(s) => setTshirt({ ...tshirt, size: s })}
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              CNC Designer
+            </h1>
+          </div>
+          <p className="text-sm text-gray-600">
+            Create precise patterns for CNC cutting
+          </p>
+        </div>
+
+        <div className="p-4">
+          <Tabs defaultValue="tshirt">
+            <TabsList className="w-full bg-white/50 backdrop-blur-sm">
+              <TabsTrigger
+                value="tshirt"
+                className="flex-1 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {["XS", "S", "M", "L", "XL", "XXL"].map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
+                T-Shirt
+              </TabsTrigger>
+              <TabsTrigger
+                value="text"
+                className="flex-1 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+              >
+                Text
+              </TabsTrigger>
+              <TabsTrigger
+                value="machine"
+                className="flex-1 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+              >
+                Machine
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="tshirt" className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="design-name"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Design Name
+                </Label>
+                <Input
+                  id="design-name"
+                  value={tshirt.designName}
+                  onChange={(e) =>
+                    setTshirt({ ...tshirt, designName: e.target.value })
+                  }
+                  className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="tshirt-size"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  T-Shirt Size
+                </Label>
+                <Select
+                  value={tshirt.size}
+                  onValueChange={(s) => setTshirt({ ...tshirt, size: s })}
+                >
+                  <SelectTrigger className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white/90 backdrop-blur-md">
+                    {["XS", "S", "M", "L", "XL", "XXL"].map((s) => (
+                      <SelectItem
+                        key={s}
+                        value={s}
+                        className="hover:bg-blue-50"
+                      >
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="tshirt-style"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  T-Shirt Style
+                </Label>
+                <Select
+                  value={tshirt.style}
+                  onValueChange={(s) => setTshirt({ ...tshirt, style: s })}
+                >
+                  <SelectTrigger className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white/90 backdrop-blur-md">
+                    <SelectItem value="classic" className="hover:bg-blue-50">
+                      Classic Fit
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tshirt-style">T-Shirt Style</Label>
-              <Select
-                value={tshirt.style}
-                onValueChange={(s) => setTshirt({ ...tshirt, style: s })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="classic">Classic Fit</SelectItem>
-                  <SelectItem value="slim">Slim Fit</SelectItem>
-                  <SelectItem value="oversized">Oversized</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </TabsContent>
+                    <SelectItem value="slim" className="hover:bg-blue-50">
+                      Slim Fit
+                    </SelectItem>
+                    <SelectItem value="oversized" className="hover:bg-blue-50">
+                      Oversized
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </TabsContent>
 
-          <TabsContent value="text" className="space-y-4 pt-4">
-            {/* Text Controls Here */}
-            <Textarea
-              value={text.content}
-              onChange={(e) => setText({ ...text, content: e.target.value })}
-              placeholder="Your Text Here"
-              rows={3}
-            />
-            {/* More text controls for font, color, etc. would go here */}
-          </TabsContent>
+            <TabsContent value="text" className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">
+                  Text Content
+                </Label>
+                <Textarea
+                  value={text.content}
+                  onChange={(e) =>
+                    setText({ ...text, content: e.target.value })
+                  }
+                  placeholder="Your Text Here"
+                  rows={3}
+                  className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Font Size
+                  </Label>
+                  <Input
+                    type="number"
+                    value={text.scale}
+                    onChange={(e) =>
+                      setText({ ...text, scale: parseInt(e.target.value) })
+                    }
+                    className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Rotation
+                  </Label>
+                  <Input
+                    type="number"
+                    value={text.rotation}
+                    onChange={(e) =>
+                      setText({ ...text, rotation: parseInt(e.target.value) })
+                    }
+                    className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            </TabsContent>
 
-          <TabsContent value="machine" className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Machine Type</Label>
-              <Select
-                value={machine.type}
-                onValueChange={(t) =>
-                  setMachine({ ...machine, type: t as "laser" | "dragKnife" })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="laser">Laser Cutter</SelectItem>
-                  <SelectItem value="dragKnife">Drag Knife</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Material Thickness (mm)</Label>
-              <Input
-                type="number"
-                value={machine.materialThickness}
-                step="0.1"
-                onChange={(e) =>
-                  setMachine({
-                    ...machine,
-                    materialThickness: parseFloat(e.target.value),
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Cutting Speed (mm/min)</Label>
-              <Input
-                type="number"
-                value={machine.cuttingSpeed}
-                step="50"
-                onChange={(e) =>
-                  setMachine({
-                    ...machine,
-                    cuttingSpeed: parseInt(e.target.value),
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Cutting Depth (mm)</Label>
-              <Input
-                type="number"
-                value={machine.cuttingDepth}
-                step="0.1"
-                onChange={(e) =>
-                  setMachine({
-                    ...machine,
-                    cuttingDepth: parseFloat(e.target.value),
-                  })
-                }
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="machine" className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">
+                  Machine Type
+                </Label>
+                <Select
+                  value={machine.type}
+                  onValueChange={(t) =>
+                    setMachine({ ...machine, type: t as "laser" | "dragKnife" })
+                  }
+                >
+                  <SelectTrigger className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white/90 backdrop-blur-md">
+                    <SelectItem value="laser" className="hover:bg-blue-50">
+                      Laser Cutter
+                    </SelectItem>
+                    <SelectItem value="dragKnife" className="hover:bg-blue-50">
+                      Drag Knife
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Thickness (mm)
+                  </Label>
+                  <Input
+                    type="number"
+                    value={machine.materialThickness}
+                    step="0.1"
+                    onChange={(e) =>
+                      setMachine({
+                        ...machine,
+                        materialThickness: parseFloat(e.target.value),
+                      })
+                    }
+                    className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Speed (mm/min)
+                  </Label>
+                  <Input
+                    type="number"
+                    value={machine.cuttingSpeed}
+                    step="50"
+                    onChange={(e) =>
+                      setMachine({
+                        ...machine,
+                        cuttingSpeed: parseInt(e.target.value),
+                      })
+                    }
+                    className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">
+                  Cutting Depth (mm)
+                </Label>
+                <Input
+                  type="number"
+                  value={machine.cuttingDepth}
+                  step="0.1"
+                  onChange={(e) =>
+                    setMachine({
+                      ...machine,
+                      cuttingDepth: parseFloat(e.target.value),
+                    })
+                  }
+                  className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500"
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
 
       {/* Center Panel: Canvas */}
       <div className="flex-1 flex flex-col">
-        <div className="flex-none bg-white border-b p-2 flex justify-between items-center">
-          <div className="flex gap-2">
+        <div className="flex-none bg-white/70 backdrop-blur-md border-b border-white/20 shadow-lg p-4 flex justify-between items-center">
+          <div className="flex gap-3">
             <Button
               variant="default"
               onClick={generateGcode}
               disabled={isGenerating}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
             >
-              <FileCode className="mr-2 h-4 w-4" />{" "}
+              <FileCode className="mr-2 h-4 w-4" />
               {isGenerating ? "Generating..." : "Generate G-code"}
             </Button>
             <Button
               variant="outline"
               onClick={handleDownloadGcode}
               disabled={!gcode}
+              className="bg-white/50 backdrop-blur-sm border-white/30 hover:bg-white/70"
             >
               <Download className="mr-2 h-4 w-4" /> Download
             </Button>
           </div>
-          <div className="flex gap-2 items-center">
-            {/* Zoom and Grid controls */}
+          <div className="flex gap-2 items-center bg-white/50 backdrop-blur-sm rounded-lg p-2">
             <Button
               variant="outline"
               size="icon"
               onClick={() => setView({ ...view, showGrid: !view.showGrid })}
+              className="bg-white/50 backdrop-blur-sm border-white/30"
             >
               <Grid
-                className={`h-4 w-4 ${view.showGrid ? "text-primary" : ""}`}
+                className={`h-4 w-4 ${view.showGrid ? "text-blue-600" : ""}`}
               />
             </Button>
             <Button
@@ -455,10 +558,11 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
               onClick={() =>
                 setView({ ...view, zoom: Math.max(0.2, view.zoom - 0.2) })
               }
+              className="bg-white/50 backdrop-blur-sm border-white/30"
             >
               <ZoomOut className="h-4 w-4" />
             </Button>
-            <span className="text-sm w-12 text-center">
+            <span className="text-sm w-12 text-center font-medium text-gray-700">
               {Math.round(view.zoom * 100)}%
             </span>
             <Button
@@ -467,12 +571,13 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
               onClick={() =>
                 setView({ ...view, zoom: Math.min(3, view.zoom + 0.2) })
               }
+              className="bg-white/50 backdrop-blur-sm border-white/30"
             >
               <ZoomIn className="h-4 w-4" />
             </Button>
           </div>
         </div>
-        <div className="flex-1 bg-gray-200 overflow-auto p-4">
+        <div className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 overflow-auto p-6">
           <div
             style={{
               transform: `scale(${view.zoom})`,
@@ -481,20 +586,23 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
           >
             <canvas
               ref={canvasRef}
-              width={800} // Represents 800mm
-              height={1000} // Represents 1000mm
-              className="bg-white shadow-lg"
+              width={800}
+              height={1000}
+              className="bg-white shadow-2xl rounded-lg border border-white/20"
             />
           </div>
         </div>
       </div>
 
       {/* Right Panel: G-code Viewer */}
-      <div className="w-96 bg-gray-800 text-white font-mono flex flex-col">
-        <div className="p-2 border-b border-gray-600 text-sm">
-          G-code Preview
+      <div className="w-96 bg-gray-900/90 backdrop-blur-md text-white font-mono flex flex-col shadow-xl">
+        <div className="p-4 border-b border-gray-700/50 bg-gradient-to-r from-gray-800/50 to-gray-900/50">
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+            <span className="text-sm font-medium">G-code Preview</span>
+          </div>
         </div>
-        <pre className="flex-1 p-2 text-xs overflow-auto whitespace-pre-wrap">
+        <pre className="flex-1 p-4 text-xs overflow-auto whitespace-pre-wrap bg-gray-900/50">
           {gcode || "Click 'Generate G-code' to see the output here."}
         </pre>
       </div>
