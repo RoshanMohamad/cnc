@@ -128,7 +128,7 @@ function handleWebSocketMessage(message: WebSocketMessage) {
 }
 
 // Broadcast message to all connected clients
-export function broadcastToAllClients(message: WebSocketMessage) {
+function broadcastToAllClients(message: WebSocketMessage) {
     const messageString = JSON.stringify(message);
 
     clients.forEach((client) => {
@@ -139,13 +139,6 @@ export function broadcastToAllClients(message: WebSocketMessage) {
             clients.delete(client);
         }
     });
-}
-
-// Send message to specific client (if needed in the future)
-export function sendToClient(clientId: string, message: WebSocketMessage) {
-    // Implementation for sending to specific client would go here
-    // For now, we'll broadcast to all clients
-    broadcastToAllClients(message);
 }
 
 // HTTP endpoints for WebSocket management
