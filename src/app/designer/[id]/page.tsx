@@ -67,42 +67,81 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     const ctx = canvas?.getContext("2d");
     if (!ctx || !canvas) return;
 
-    // Clear and prepare canvas
-    ctx.fillStyle = "#ffffff";
+    // Clear and prepare canvas with better background
+    ctx.fillStyle = "#f8fafc";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid
+    // Draw grid with better styling
     if (view.showGrid) drawGrid(ctx, canvas.width, canvas.height);
 
-    // Draw T-Shirt Patterns
+    // Draw T-Shirt Patterns with enhanced styling
     drawTshirtPattern(ctx, tshirt.size, tshirt.style);
 
-    // Draw Text Design
-    // if (font) {
-    //   drawTextDesign(ctx, text, font);
-    // }
+    // Draw rulers/measurements
+    drawRulers(ctx, canvas.width, canvas.height);
   });
 
-  // --- DRAWING FUNCTIONS ---
+  // --- ENHANCED DRAWING FUNCTIONS ---
 
   const drawGrid = (
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number
   ) => {
-    ctx.strokeStyle = "#e5e7eb";
+    // Major grid lines (every 50mm)
+    ctx.strokeStyle = "#cbd5e1";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    for (let x = 0; x <= width; x += 10) {
-      // Grid lines every 10mm
+    for (let x = 0; x <= width; x += 50) {
       ctx.moveTo(x, 0);
       ctx.lineTo(x, height);
     }
-    for (let y = 0; y <= height; y += 10) {
+    for (let y = 0; y <= height; y += 50) {
       ctx.moveTo(0, y);
       ctx.lineTo(width, y);
     }
     ctx.stroke();
+
+    // Minor grid lines (every 10mm)
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    for (let x = 0; x <= width; x += 10) {
+      if (x % 50 !== 0) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+      }
+    }
+    for (let y = 0; y <= height; y += 10) {
+      if (y % 50 !== 0) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+      }
+    }
+    ctx.stroke();
+  };
+
+  const drawRulers = (
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number
+  ) => {
+    ctx.fillStyle = "#1e293b";
+    ctx.font = "10px Arial";
+    ctx.textAlign = "center";
+
+    // Top ruler
+    for (let x = 50; x <= width; x += 50) {
+      ctx.fillText(`${x}mm`, x, 15);
+    }
+
+    // Left ruler
+    ctx.save();
+    ctx.rotate(-Math.PI / 2);
+    for (let y = 50; y <= height; y += 50) {
+      ctx.fillText(`${y}mm`, -y, 15);
+    }
+    ctx.restore();
   };
 
   const drawTshirtPattern = (
@@ -111,31 +150,169 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     style: string
   ) => {
     const dims = getTshirtDimensions(size, style);
-    ctx.strokeStyle = "#3b82f6";
-    ctx.lineWidth = 2;
 
-    // Draw Front Piece
-    const frontPath = getTshirtPiecePath("front", dims);
-    ctx.stroke(frontPath);
+    // Base position for the pattern
+    const baseX = 100;
+    const baseY = 50;
 
-    // Draw Back Piece (offset to the side)
-    const backPath = getTshirtPiecePath("back", dims);
+    // Draw Front Piece with enhanced styling
     ctx.save();
-    ctx.translate(dims.width + 50, 0);
-    ctx.stroke(backPath);
+    ctx.translate(baseX, baseY);
+    drawTshirtPiece(ctx, "FRONT", dims, "#3b82f6", "#1e40af");
     ctx.restore();
 
-    // Draw Sleeves
-    const sleevePath = getSleevePath(dims);
+    // Draw Back Piece
     ctx.save();
-    ctx.translate(0, dims.length + 50);
-    ctx.stroke(sleevePath);
-    ctx.translate(dims.sleeveWidth + 50, 0);
-    ctx.stroke(sleevePath);
+    ctx.translate(baseX + dims.width + 80, baseY);
+    drawTshirtPiece(ctx, "BACK", dims, "#10b981", "#047857");
     ctx.restore();
+
+    // Draw Left Sleeve
+    ctx.save();
+    ctx.translate(baseX, baseY + dims.length + 80);
+    drawSleevePiece(ctx, "LEFT SLEEVE", dims, "#f59e0b", "#d97706");
+    ctx.restore();
+
+    // Draw Right Sleeve
+    ctx.save();
+    ctx.translate(baseX + dims.sleeveWidth + 50, baseY + dims.length + 80);
+    drawSleevePiece(ctx, "RIGHT SLEEVE", dims, "#f59e0b", "#d97706");
+    ctx.restore();
+
+    // Draw cutting lines and annotations
+    drawCuttingInstructions(ctx, dims, baseX, baseY);
   };
 
-  // --- G-CODE GENERATION ---
+  const drawTshirtPiece = (
+    ctx: CanvasRenderingContext2D,
+    label: string,
+    dims: ReturnType<typeof getTshirtDimensions>,
+    strokeColor: string,
+    fillColor: string
+  ) => {
+    const path = getTshirtPiecePath(label === "FRONT" ? "front" : "back", dims);
+
+    // Fill with semi-transparent color
+    ctx.fillStyle = fillColor + "20";
+    ctx.fill(path);
+
+    // Stroke with solid color
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 3;
+    ctx.stroke(path);
+
+    // Add dotted cutting line
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = strokeColor + "80";
+    ctx.lineWidth = 1;
+    ctx.stroke(path);
+    ctx.setLineDash([]);
+
+    // Add label
+    ctx.fillStyle = "#1e293b";
+    ctx.font = "bold 14px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(label, 0, -20);
+
+    // Add dimensions
+    ctx.font = "10px Arial";
+    ctx.fillStyle = "#64748b";
+    ctx.fillText(`W: ${dims.width.toFixed(0)}mm`, 0, dims.length + 25);
+    ctx.fillText(
+      `L: ${dims.length.toFixed(0)}mm`,
+      dims.width / 2 + 20,
+      dims.length / 2
+    );
+  };
+
+  const drawSleevePiece = (
+    ctx: CanvasRenderingContext2D,
+    label: string,
+    dims: ReturnType<typeof getTshirtDimensions>,
+    strokeColor: string,
+    fillColor: string
+  ) => {
+    const path = getSleevePath(dims);
+
+    // Fill with semi-transparent color
+    ctx.fillStyle = fillColor + "20";
+    ctx.fill(path);
+
+    // Stroke with solid color
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 3;
+    ctx.stroke(path);
+
+    // Add dotted cutting line
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = strokeColor + "80";
+    ctx.lineWidth = 1;
+    ctx.stroke(path);
+    ctx.setLineDash([]);
+
+    // Add label
+    ctx.fillStyle = "#1e293b";
+    ctx.font = "bold 12px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(label, 0, -15);
+
+    // Add dimensions
+    ctx.font = "10px Arial";
+    ctx.fillStyle = "#64748b";
+    ctx.fillText(
+      `W: ${dims.sleeveWidth.toFixed(0)}mm`,
+      0,
+      dims.sleeveLength + 20
+    );
+    ctx.fillText(
+      `L: ${dims.sleeveLength.toFixed(0)}mm`,
+      dims.sleeveWidth / 2 + 15,
+      dims.sleeveLength / 2
+    );
+  };
+
+  const drawCuttingInstructions = (
+    ctx: CanvasRenderingContext2D,
+    dims: ReturnType<typeof getTshirtDimensions>,
+    baseX: number,
+    baseY: number
+  ) => {
+    // Add seam allowances indicators
+    ctx.strokeStyle = "#ef4444";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 2]);
+
+    // Front piece seam allowance
+    ctx.beginPath();
+    const frontPath = getTshirtPiecePath("front", dims);
+    ctx.save();
+    ctx.translate(baseX, baseY);
+    ctx.scale(1.05, 1.05); // 5mm seam allowance
+    ctx.stroke(frontPath);
+    ctx.restore();
+
+    // Add cutting instructions text
+    ctx.fillStyle = "#dc2626";
+    ctx.font = "12px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText("⚠️ Red dashed line: 5mm seam allowance", 20, 25);
+
+    ctx.fillStyle = "#1e293b";
+    ctx.fillText("📐 Cut pieces according to the solid lines", 20, 40);
+    ctx.fillText(
+      `📏 Total fabric needed: ${(dims.width * 2 + 100).toFixed(0)}mm × ${(
+        dims.length +
+        dims.sleeveLength +
+        150
+      ).toFixed(0)}mm`,
+      20,
+      55
+    );
+
+    ctx.setLineDash([]);
+  };
+
+  // --- DRAWING FUNCTIONS ---
 
   const getTshirtDimensions = (size: string, style: string) => {
     const sizeMultipliers: { [key: string]: number } = {
@@ -173,24 +350,67 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     const neckDrop = piece === "front" ? dims.frontNeckDrop : dims.backNeckDrop;
     const shoulderX = dims.width / 2;
     const shoulderY = 0;
-    const armholeY = dims.sleeveWidth * 0.9;
+    const armholeY = dims.sleeveWidth * 0.3;
     const bottomY = dims.length;
 
-    path.moveTo(-shoulderX, shoulderY); // Left shoulder point
-    path.lineTo(-dims.neckWidth / 2, shoulderY); // Left neck point
+    // Start from left shoulder
+    path.moveTo(-shoulderX, shoulderY);
+
+    // Left side down to armhole
+    path.lineTo(-shoulderX, armholeY);
+
+    // Armhole curve (left)
+    path.bezierCurveTo(
+      -shoulderX + 20,
+      armholeY + 30,
+      -shoulderX + 60,
+      armholeY + 40,
+      -shoulderX + 80,
+      armholeY
+    );
+
+    // Side seam to bottom
+    path.lineTo(-dims.width / 2 + 30, bottomY);
+
+    // Bottom hem
+    path.lineTo(dims.width / 2 - 30, bottomY);
+
+    // Right side seam
+    path.lineTo(shoulderX - 80, armholeY);
+
+    // Armhole curve (right)
+    path.bezierCurveTo(
+      shoulderX - 60,
+      armholeY + 40,
+      shoulderX - 20,
+      armholeY + 30,
+      shoulderX,
+      armholeY
+    );
+
+    // Right shoulder
+    path.lineTo(shoulderX, shoulderY);
+
+    // Neck opening
+    path.lineTo(dims.neckWidth / 2, shoulderY);
+    path.bezierCurveTo(
+      dims.neckWidth / 3,
+      neckDrop * 0.3,
+      dims.neckWidth / 3,
+      neckDrop,
+      0,
+      neckDrop
+    );
     path.bezierCurveTo(
       -dims.neckWidth / 3,
       neckDrop,
-      dims.neckWidth / 3,
-      neckDrop,
-      dims.neckWidth / 2,
+      -dims.neckWidth / 3,
+      neckDrop * 0.3,
+      -dims.neckWidth / 2,
       shoulderY
-    ); // Neck curve
-    path.lineTo(shoulderX, shoulderY); // Right shoulder
-    path.lineTo(shoulderX, armholeY); // Underarm point
-    path.lineTo(dims.width / 2 - 20, bottomY); // Right bottom
-    path.lineTo(-dims.width / 2 + 20, bottomY); // Left bottom
-    path.closePath(); // Connect back to start
+    );
+
+    path.closePath();
     return path;
   };
 
@@ -198,14 +418,23 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     const path = new Path2D();
     const w = dims.sleeveWidth;
     const l = dims.sleeveLength;
-    path.moveTo(-w / 2, 0); // Top left of sleeve cap
-    // Create a realistic sleeve cap curve
-    path.bezierCurveTo(-w / 4, -40, w / 4, -40, w / 2, 0);
-    path.lineTo(w / 2, l);
-    path.lineTo(-w / 2, l);
+
+    // Sleeve cap (top curve)
+    path.moveTo(-w / 2, 0);
+    path.bezierCurveTo(-w / 3, -30, -w / 6, -40, 0, -35);
+    path.bezierCurveTo(w / 6, -40, w / 3, -30, w / 2, 0);
+
+    // Right side seam
+    path.lineTo(w / 2 - 20, l);
+
+    // Bottom hem
+    path.lineTo(-w / 2 + 20, l);
+
     path.closePath();
     return path;
   };
+
+  // --- G-CODE GENERATION ---
 
   const generateGcode = async () => {
     setIsGenerating(true);
