@@ -37,7 +37,7 @@ export default function Home() {
                 <Cpu className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                CNC Pro Studio
+                Tech Titans CNC
               </span>
             </div>
 
@@ -64,11 +64,14 @@ export default function Home() {
             </div>
 
             {/* Status and Actions */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center md:space-x-4 space-x-1">
               <WebSocketStatus />
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="lg" className="hidden md:flex">
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
+              </Button>
+              <Button variant="outline" size="sm" className="md:hidden">
+                <Settings className="w-4 h-4 mr-2" />
               </Button>
             </div>
           </div>
@@ -103,12 +106,17 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="group">
-              <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-              Start Machining
-            </Button>
+            <Link
+              href="/machines"
+              className="text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              <Button size="lg" className="group cursor-pointer">
+                <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                Start Machining
+              </Button>
+            </Link>
             <Link href="/designer/new">
-              <Button variant="outline" size="lg">
+              <Button variant="outline" size="lg" className="group cursor-pointer">
                 <Layers className="w-5 h-5 mr-2" />
                 Design G-Code
               </Button>
@@ -312,7 +320,7 @@ export default function Home() {
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
               <Cpu className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold">CNC Pro Studio</span>
+            <span className="text-xl font-bold">Tech Titans CNC</span>
           </div>
           <p className="text-gray-400 mb-6">
             Professional CNC control software for modern manufacturing

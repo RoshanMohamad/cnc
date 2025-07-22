@@ -16,7 +16,7 @@ export function WebSocketStatus() {
   return (
     <div className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg backdrop-blur-sm">
       <div className={`w-3 h-3 rounded-full ${getStatusColor()}`} />
-      <span className="text-sm font-medium text-white">
+      <span className="text-sm md:block hidden font-medium text-gray-800">
         WebSocket: {getStatusText()}
       </span>
       {!isConnected && (
