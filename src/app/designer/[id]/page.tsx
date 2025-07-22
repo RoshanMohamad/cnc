@@ -2,8 +2,6 @@
 
 import React from "react";
 import { useState, useRef, useEffect } from "react";
-// Assuming opentype.js is installed (`npm install opentype.js`)
-// and you have a font file available in your public folder.
 
 // Import UI components from shadcn/ui
 import { Button } from "@/components/ui/button";
@@ -19,16 +17,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { FileCode, ZoomIn, ZoomOut, Grid, Download } from "lucide-react";
+import {
+  FileCode,
+  ZoomIn,
+  ZoomOut,
+  Grid,
+  Download,
+  Shirt,
+  Square,
+} from "lucide-react";
 
 // Main Designer Page Component
 export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // const [font, setFont] = useState<opentype.Font | null>(null);
-  // const [machineId, setMachineId] = useState<string | null>(null)
   const [view, setView] = useState({ zoom: 1, showGrid: true });
-  const [gcode, setGcode] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Updated state to handle separate G-code for each piece
+  const [gcodeResults, setGcodeResults] = useState({
+    front: "",
+    back: "",
+    sleeve: "",
+  });
+
+  const [isGenerating, setIsGenerating] = useState({
+    front: false,
+    back: false,
+    sleeve: false,
+  });
 
   // T-Shirt Properties State
   const [tshirt, setTshirt] = useState({
@@ -45,9 +60,9 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     isBold: false,
     isItalic: false,
     align: "center" as CanvasTextAlign,
-    position: { x: 400, y: 250 }, // Position in mm
-    scale: 100, // Percentage
-    rotation: 0, // Degrees
+    position: { x: 400, y: 250 },
+    scale: 100,
+    rotation: 0,
   });
 
   // Machine & Cutting Properties State
@@ -56,9 +71,9 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     ipAddress: "192.168.8.130",
     isSending: false,
     sendStatus: "",
-    materialThickness: 0.5, // in mm
-    cuttingSpeed: 2000, // mm/min
-    cuttingDepth: 0.6, // in mm (should be >= thickness)
+    materialThickness: 0.5,
+    cuttingSpeed: 2000,
+    cuttingDepth: 0.6,
   });
 
   // Main canvas drawing logic
@@ -67,28 +82,112 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     const ctx = canvas?.getContext("2d");
     if (!ctx || !canvas) return;
 
-    // Clear and prepare canvas with better background
     ctx.fillStyle = "#f8fafc";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid with better styling
     if (view.showGrid) drawGrid(ctx, canvas.width, canvas.height);
-
-    // Draw T-Shirt Patterns with enhanced styling
     drawTshirtPattern(ctx, tshirt.size, tshirt.style);
-
-    // Draw rulers/measurements
     drawRulers(ctx, canvas.width, canvas.height);
   });
 
-  // --- ENHANCED DRAWING FUNCTIONS ---
+  // G-CODE GENERATION FUNCTIONS FOR EACH PIECE
+  const generatePieceGcode = async (pieceType: "front" | "back" | "sleeve") => {
+    setIsGenerating((prev) => ({ ...prev, [pieceType]: true }));
+    setGcodeResults((prev) => ({
+      ...prev,
+      [pieceType]: "Generating, please wait...",
+    }));
 
+    try {
+      const response = await fetch("/api/gcode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          machineId: machine.ipAddress,
+          pieceType: pieceType, // This is the key addition
+          tshirtSize: tshirt.size,
+          tshirtStyle: tshirt.style,
+          textContent: text.content,
+          textPosition: text.position,
+          textScale: text.scale,
+          textRotation: text.rotation,
+          textFont: text.fontFamily,
+          textBold: text.isBold,
+          textItalic: text.isItalic,
+          textAlign: text.align,
+          textColor: text.color,
+          material: "cotton",
+          thickness: machine.materialThickness,
+          speed: machine.cuttingSpeed,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        setGcodeResults((prev) => ({
+          ...prev,
+          [pieceType]: `Error: ${data.error || "Unknown error"}`,
+        }));
+      } else {
+        setGcodeResults((prev) => ({
+          ...prev,
+          [pieceType]: data.gcode || "No G-code returned.",
+        }));
+      }
+    } catch (err) {
+      setGcodeResults((prev) => ({
+        ...prev,
+        [pieceType]: `Network error: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      }));
+    }
+
+    setIsGenerating((prev) => ({ ...prev, [pieceType]: false }));
+  };
+
+  // Download G-code for specific piece
+  const handleDownloadGcode = (pieceType: "front" | "back" | "sleeve") => {
+    const gcode = gcodeResults[pieceType];
+    if (!gcode || gcode.includes("Error:") || gcode.includes("Generating"))
+      return;
+
+    const blob = new Blob([gcode], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${tshirt.designName.replace(/ /g, "_")}_${pieceType}.gcode`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Get current G-code for display
+  const getCurrentGcode = () => {
+    const pieces = Object.entries(gcodeResults).filter(
+      ([ gcode]) =>
+        gcode && !gcode.includes("Error:") && !gcode.includes("Generating")
+    );
+
+    if (pieces.length === 0) {
+      return "Click any piece button to generate G-code...";
+    }
+
+    return pieces
+      .map(
+        ([piece, gcode]) => `; === ${piece.toUpperCase()} PIECE ===\n${gcode}\n`
+      )
+      .join("\n");
+  };
+
+  // Drawing functions (keeping existing ones)
   const drawGrid = (
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number
   ) => {
-    // Major grid lines (every 50mm)
     ctx.strokeStyle = "#cbd5e1";
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -102,7 +201,6 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     }
     ctx.stroke();
 
-    // Minor grid lines (every 10mm)
     ctx.strokeStyle = "#e2e8f0";
     ctx.lineWidth = 0.5;
     ctx.beginPath();
@@ -130,12 +228,10 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     ctx.font = "10px Arial";
     ctx.textAlign = "center";
 
-    // Top ruler
     for (let x = 50; x <= width; x += 50) {
       ctx.fillText(`${x}mm`, x, 15);
     }
 
-    // Left ruler
     ctx.save();
     ctx.rotate(-Math.PI / 2);
     for (let y = 50; y <= height; y += 50) {
@@ -150,36 +246,29 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     style: string
   ) => {
     const dims = getTshirtDimensions(size, style);
-
-    // Base position for the pattern
     const baseX = 100;
     const baseY = 50;
 
-    // Draw Front Piece with enhanced styling
     ctx.save();
     ctx.translate(baseX, baseY);
     drawTshirtPiece(ctx, "FRONT", dims, "#3b82f6", "#1e40af");
     ctx.restore();
 
-    // Draw Back Piece
     ctx.save();
     ctx.translate(baseX + dims.width + 80, baseY);
     drawTshirtPiece(ctx, "BACK", dims, "#10b981", "#047857");
     ctx.restore();
 
-    // Draw Left Sleeve
     ctx.save();
     ctx.translate(baseX, baseY + dims.length + 80);
     drawSleevePiece(ctx, "LEFT SLEEVE", dims, "#f59e0b", "#d97706");
     ctx.restore();
 
-    // Draw Right Sleeve
     ctx.save();
     ctx.translate(baseX + dims.sleeveWidth + 50, baseY + dims.length + 80);
     drawSleevePiece(ctx, "RIGHT SLEEVE", dims, "#f59e0b", "#d97706");
     ctx.restore();
 
-    // Draw cutting lines and annotations
     drawCuttingInstructions(ctx, dims, baseX, baseY);
   };
 
@@ -192,29 +281,24 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
   ) => {
     const path = getTshirtPiecePath(label === "FRONT" ? "front" : "back", dims);
 
-    // Fill with semi-transparent color
     ctx.fillStyle = fillColor + "20";
     ctx.fill(path);
 
-    // Stroke with solid color
     ctx.strokeStyle = strokeColor;
     ctx.lineWidth = 3;
     ctx.stroke(path);
 
-    // Add dotted cutting line
     ctx.setLineDash([5, 5]);
     ctx.strokeStyle = strokeColor + "80";
     ctx.lineWidth = 1;
     ctx.stroke(path);
     ctx.setLineDash([]);
 
-    // Add label
     ctx.fillStyle = "#1e293b";
     ctx.font = "bold 14px Arial";
     ctx.textAlign = "center";
     ctx.fillText(label, 0, -20);
 
-    // Add dimensions
     ctx.font = "10px Arial";
     ctx.fillStyle = "#64748b";
     ctx.fillText(`W: ${dims.width.toFixed(0)}mm`, 0, dims.length + 25);
@@ -234,29 +318,24 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
   ) => {
     const path = getSleevePath(dims);
 
-    // Fill with semi-transparent color
     ctx.fillStyle = fillColor + "20";
     ctx.fill(path);
 
-    // Stroke with solid color
     ctx.strokeStyle = strokeColor;
     ctx.lineWidth = 3;
     ctx.stroke(path);
 
-    // Add dotted cutting line
     ctx.setLineDash([5, 5]);
     ctx.strokeStyle = strokeColor + "80";
     ctx.lineWidth = 1;
     ctx.stroke(path);
     ctx.setLineDash([]);
 
-    // Add label
     ctx.fillStyle = "#1e293b";
     ctx.font = "bold 12px Arial";
     ctx.textAlign = "center";
     ctx.fillText(label, 0, -15);
 
-    // Add dimensions
     ctx.font = "10px Arial";
     ctx.fillStyle = "#64748b";
     ctx.fillText(
@@ -277,21 +356,17 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     baseX: number,
     baseY: number
   ) => {
-    // Add seam allowances indicators
     ctx.strokeStyle = "#ef4444";
     ctx.lineWidth = 1;
     ctx.setLineDash([2, 2]);
 
-    // Front piece seam allowance
-    ctx.beginPath();
     const frontPath = getTshirtPiecePath("front", dims);
     ctx.save();
     ctx.translate(baseX, baseY);
-    ctx.scale(1.05, 1.05); // 5mm seam allowance
+    ctx.scale(1.05, 1.05);
     ctx.stroke(frontPath);
     ctx.restore();
 
-    // Add cutting instructions text
     ctx.fillStyle = "#dc2626";
     ctx.font = "12px Arial";
     ctx.textAlign = "left";
@@ -312,8 +387,6 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     ctx.setLineDash([]);
   };
 
-  // --- DRAWING FUNCTIONS ---
-
   const getTshirtDimensions = (size: string, style: string) => {
     const sizeMultipliers: { [key: string]: number } = {
       XS: 0.85,
@@ -330,7 +403,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     };
     const sizeMultiplier = sizeMultipliers[size] || 1;
     const styleMultiplier = styleMultipliers[style] || 1;
-    // Base dimensions in mm for a Medium Classic-Fit
+
     return {
       width: 460 * sizeMultiplier * styleMultiplier,
       length: 600 * sizeMultiplier * styleMultiplier,
@@ -353,13 +426,8 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     const armholeY = dims.sleeveWidth * 0.3;
     const bottomY = dims.length;
 
-    // Start from left shoulder
     path.moveTo(-shoulderX, shoulderY);
-
-    // Left side down to armhole
     path.lineTo(-shoulderX, armholeY);
-
-    // Armhole curve (left)
     path.bezierCurveTo(
       -shoulderX + 20,
       armholeY + 30,
@@ -368,17 +436,9 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
       -shoulderX + 80,
       armholeY
     );
-
-    // Side seam to bottom
     path.lineTo(-dims.width / 2 + 30, bottomY);
-
-    // Bottom hem
     path.lineTo(dims.width / 2 - 30, bottomY);
-
-    // Right side seam
     path.lineTo(shoulderX - 80, armholeY);
-
-    // Armhole curve (right)
     path.bezierCurveTo(
       shoulderX - 60,
       armholeY + 40,
@@ -387,11 +447,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
       shoulderX,
       armholeY
     );
-
-    // Right shoulder
     path.lineTo(shoulderX, shoulderY);
-
-    // Neck opening
     path.lineTo(dims.neckWidth / 2, shoulderY);
     path.bezierCurveTo(
       dims.neckWidth / 3,
@@ -409,8 +465,8 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
       -dims.neckWidth / 2,
       shoulderY
     );
-
     path.closePath();
+
     return path;
   };
 
@@ -419,94 +475,16 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     const w = dims.sleeveWidth;
     const l = dims.sleeveLength;
 
-    // Sleeve cap (top curve)
     path.moveTo(-w / 2, 0);
     path.bezierCurveTo(-w / 3, -30, -w / 6, -40, 0, -35);
     path.bezierCurveTo(w / 6, -40, w / 3, -30, w / 2, 0);
-
-    // Right side seam
     path.lineTo(w / 2 - 20, l);
-
-    // Bottom hem
     path.lineTo(-w / 2 + 20, l);
-
     path.closePath();
+
     return path;
   };
 
-  // --- G-CODE GENERATION ---
-
-  const generateGcode = async () => {
-    setIsGenerating(true);
-    setGcode("Generating, please wait...");
-
-    try {
-      // Send request to your Next.js API route
-      const response = await fetch("/api/gcode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          machineId: machine.ipAddress, // Use the IP from your state
-          tshirtSize: tshirt.size,
-          tshirtStyle: tshirt.style,
-          // You can add more fields if needed, e.g. textContent, etc.
-          // For now, only sending the required ones for pattern cutting
-          thickness: machine.materialThickness,
-          speed: machine.cuttingSpeed,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || data.error) {
-        setGcode(`Error: ${data.error || "Unknown error"}`);
-      } else {
-        setGcode(data.gcode || "No G-code returned.");
-      }
-    } catch (err) {
-      setGcode(
-        `Network error: ${err instanceof Error ? err.message : String(err)}`
-      );
-    }
-
-    setIsGenerating(false);
-  };
-
-  // This is a placeholder for a complex function. A real implementation would be more involved.
-  // const generatePieceGcode = (
-  //   name: string,
-  //   path: Path2D,
-  //   position: { x: number; y: number },
-  //   zCut: number,
-  //   zSafe: number,
-  //   speed: number
-  // ) => {
-  //   // This function would ideally decompose the Path2D object. Since that's not trivial,
-  //   // we'll regenerate the path with G-code commands as a stand-in.
-  //   // This is a conceptual representation.
-  //   let g = `\n(${name})\n`;
-  //   g += `G0 X${position.x.toFixed(3)} Y${position.y.toFixed(3)}\n`;
-  //   g += `G1 Z${zCut.toFixed(3)} F${speed / 2}\n`; // Plunge
-  //   g += `G1 F${speed}\n`;
-  //   g += `; ... path commands would be generated here ...\n`;
-  //   g += `G0 Z${zSafe.toFixed(3)}\n`; // Retract
-  //   return g;
-  // };
-
-  const handleDownloadGcode = () => {
-    if (!gcode) return;
-    const blob = new Blob([gcode], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${tshirt.designName.replace(/ /g, "_")}.gcode`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  // --- RENDER ---
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Left Panel: Controls */}
@@ -752,24 +730,78 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
       <div className="flex-1 flex flex-col">
         <div className="flex-none bg-white/70 backdrop-blur-md border-b border-white/20 shadow-lg p-4 flex justify-between items-center">
           <div className="flex gap-3">
+            {/* Three separate buttons for each piece */}
             <Button
               variant="default"
-              onClick={generateGcode}
-              disabled={isGenerating}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
+              onClick={() => generatePieceGcode("front")}
+              disabled={isGenerating.front}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg"
             >
-              <FileCode className="mr-2 h-4 w-4" />
-              {isGenerating ? "Generating..." : "Generate G-code"}
+              <Shirt className="mr-2 h-4 w-4" />
+              {isGenerating.front ? "Generating..." : "Front"}
+            </Button>
+
+            <Button
+              variant="default"
+              onClick={() => generatePieceGcode("back")}
+              disabled={isGenerating.back}
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-lg"
+            >
+              <Shirt className="mr-2 h-4 w-4" />
+              {isGenerating.back ? "Generating..." : "Back"}
+            </Button>
+
+            <Button
+              variant="default"
+              onClick={() => generatePieceGcode("sleeve")}
+              disabled={isGenerating.sleeve}
+              className="bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg"
+            >
+              <Square className="mr-2 h-4 w-4" />
+              {isGenerating.sleeve ? "Generating..." : "Sleeve"}
+            </Button>
+          </div>
+
+          <div className="flex gap-2">
+            {/* Download buttons for each piece */}
+            <Button
+              variant="outline"
+              onClick={() => handleDownloadGcode("front")}
+              disabled={
+                !gcodeResults.front ||
+                gcodeResults.front.includes("Error:") ||
+                gcodeResults.front.includes("Generating")
+              }
+              className="bg-white/50 backdrop-blur-sm border-white/30 hover:bg-white/70"
+            >
+              <Download className="mr-2 h-4 w-4" /> Front
             </Button>
             <Button
               variant="outline"
-              onClick={handleDownloadGcode}
-              disabled={!gcode}
+              onClick={() => handleDownloadGcode("back")}
+              disabled={
+                !gcodeResults.back ||
+                gcodeResults.back.includes("Error:") ||
+                gcodeResults.back.includes("Generating")
+              }
               className="bg-white/50 backdrop-blur-sm border-white/30 hover:bg-white/70"
             >
-              <Download className="mr-2 h-4 w-4" /> Download
+              <Download className="mr-2 h-4 w-4" /> Back
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleDownloadGcode("sleeve")}
+              disabled={
+                !gcodeResults.sleeve ||
+                gcodeResults.sleeve.includes("Error:") ||
+                gcodeResults.sleeve.includes("Generating")
+              }
+              className="bg-white/50 backdrop-blur-sm border-white/30 hover:bg-white/70"
+            >
+              <Download className="mr-2 h-4 w-4" /> Sleeve
             </Button>
           </div>
+
           <div className="flex gap-2 items-center bg-white/50 backdrop-blur-sm rounded-lg p-2">
             <Button
               variant="outline"
@@ -806,6 +838,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
             </Button>
           </div>
         </div>
+
         <div className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 overflow-auto p-6">
           <div
             style={{
@@ -832,7 +865,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
           </div>
         </div>
         <pre className="flex-1 p-4 text-xs overflow-auto whitespace-pre-wrap bg-gray-900/50">
-          {gcode || "Click 'Generate G-code' to see the output here."}
+          {getCurrentGcode()}
         </pre>
       </div>
     </div>
