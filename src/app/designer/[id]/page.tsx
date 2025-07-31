@@ -34,12 +34,14 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
 
   // Updated state to handle separate G-code for each piece
   const [gcodeResults, setGcodeResults] = useState({
+    text: "",
     front: "",
     back: "",
     sleeve: "",
   });
 
   const [isGenerating, setIsGenerating] = useState({
+    text: false,
     front: false,
     back: false,
     sleeve: false,
@@ -91,7 +93,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
   });
 
   // G-CODE GENERATION FUNCTIONS FOR EACH PIECE
-  const generatePieceGcode = async (pieceType: "front" | "back" | "sleeve") => {
+  const generatePieceGcode = async (pieceType: "text"|"front" | "back" | "sleeve") => {
     setIsGenerating((prev) => ({ ...prev, [pieceType]: true }));
     setGcodeResults((prev) => ({
       ...prev,
@@ -148,7 +150,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
   };
 
   // Download G-code for specific piece
-  const handleDownloadGcode = (pieceType: "front" | "back" | "sleeve") => {
+  const handleDownloadGcode = (pieceType:"text" | "front" | "back" | "sleeve") => {
     const gcode = gcodeResults[pieceType];
     if (!gcode || gcode.includes("Error:") || gcode.includes("Generating"))
       return;
@@ -167,7 +169,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
   // Get current G-code for display
   const getCurrentGcode = () => {
     const pieces = Object.entries(gcodeResults).filter(
-      ([ gcode]) =>
+      ([gcode]) =>
         gcode && !gcode.includes("Error:") && !gcode.includes("Generating")
     );
 
@@ -730,6 +732,15 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
       <div className="flex-1 flex flex-col">
         <div className="flex-none bg-white/70 backdrop-blur-md border-b border-white/20 shadow-lg p-4 flex justify-between items-center">
           <div className="flex gap-3">
+            <Button
+              variant="default"
+              onClick={() => generatePieceGcode("text")}
+              disabled={isGenerating.text}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
+            >
+              <FileCode className="mr-2 h-4 w-4" />
+              {isGenerating.text ? "Generating..." : "Text G-code"}
+            </Button>
             {/* Three separate buttons for each piece */}
             <Button
               variant="default"

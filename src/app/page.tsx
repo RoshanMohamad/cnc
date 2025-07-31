@@ -8,7 +8,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Settings,
   Play,
   Sparkles,
   Cpu,
@@ -21,7 +20,6 @@ import {
   Activity,
   Wifi,
 } from "lucide-react";
-import { WebSocketStatus } from "@/components/WebSocketStatus";
 import { GcodeProgressMonitor } from "@/components/GcodeProgressMonitor";
 
 export default function Home() {
@@ -61,18 +59,6 @@ export default function Home() {
               >
                 Monitor
               </Link>
-            </div>
-
-            {/* Status and Actions */}
-            <div className="flex items-center md:space-x-4 space-x-1">
-              <WebSocketStatus />
-              <Button variant="outline" size="lg" className="hidden md:flex">
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
-              </Button>
-              <Button variant="outline" size="sm" className="md:hidden">
-                <Settings className="w-4 h-4 mr-2" />
-              </Button>
             </div>
           </div>
         </div>

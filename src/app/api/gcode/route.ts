@@ -1,26 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-// WebSocket integration
-async function broadcastWebSocketMessage(type: string, data: unknown, machineId?: string) {
-  try {
-    await fetch('http://localhost:3000/api/websocket', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type,
-        data,
-        machineId
-      })
-    });
-  } catch (error) {
-    console.error('Failed to broadcast WebSocket message:', error);
-  }
-}
-
 // types/gcode.ts
 export interface GcodeRequest {
   machineId: string;
-  pieceType: 'front' | 'back' | 'sleeve'; // Add pieceType
+  pieceType: 'text' | 'front' | 'back' | 'sleeve'; // Add pieceType
   tshirtSize?: string;
   tshirtStyle?: string;
   textContent?: string;
@@ -38,7 +21,7 @@ export interface GcodeRequest {
 }
 
 interface TShirtSpecs {
-  pieceType: 'front' | 'back' | 'sleeve'; // Add pieceType
+  pieceType: 'text' | 'front' | 'back' | 'sleeve'; // Add pieceType
   tshirtSize: string;
   tshirtStyle: string;
   textContent: string;
@@ -74,18 +57,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Broadcast G-code generation start
-    await broadcastWebSocketMessage('gcode_progress', {
-      progress: 0,
-      status: `Generating ${body.pieceType} piece G-code...`
-    }, body.machineId);
-
     // Generate G-code with proper typing
     const gcode = generateTshirtGcode({
       pieceType: body.pieceType,
       tshirtSize: body.tshirtSize ?? "M",
       tshirtStyle: body.tshirtStyle ?? "classic",
-      textContent: body.textContent ?? "SAMPLE TEXT",
+      textContent: body.textContent ?? "TEXT",
       textPosition: body.textPosition ?? { x: 4, y: 2.5 },
       textScale: body.textScale ?? 1,
       textRotation: body.textRotation ?? 0,
@@ -99,28 +76,11 @@ export async function POST(request: NextRequest) {
       speed: body.speed ?? 1000,
     });
 
-    // Broadcast G-code generation complete
-    await broadcastWebSocketMessage('gcode_progress', {
-      progress: 50,
-      status: `${body.pieceType} G-code generated, sending to machine...`
-    }, body.machineId);
-
     const esp32Response = await sendGcodeToESP32(body.machineId, gcode);
 
     if (!esp32Response.success) {
-      // Broadcast error
-      await broadcastWebSocketMessage('error', {
-        error: esp32Response.error || "Failed to send G-code to ESP32"
-      }, body.machineId);
-
       throw new Error(esp32Response.error || "Failed to send G-code to ESP32");
     }
-
-    // Broadcast success
-    await broadcastWebSocketMessage('gcode_progress', {
-      progress: 100,
-      status: `${body.pieceType} G-code sent successfully!`
-    }, body.machineId);
 
     return NextResponse.json({
       success: true,
@@ -131,11 +91,6 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     console.error("Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-
-    // Broadcast error via WebSocket
-    await broadcastWebSocketMessage('error', {
-      error: errorMessage
-    });
 
     return NextResponse.json(
       { error: errorMessage },
@@ -178,6 +133,16 @@ function generateTshirtGcode(data: TShirtSpecs): string {
     pieceType,
   } = data;
 
+  const textGcodeContent: string = `
+G21
+G0 X${data.textPosition.x} Y${data.textPosition.y}
+G1 F${data.speed}
+G1 X${data.textPosition.x + 10 * data.textScale} Y${data.textPosition.y} ; Draw text horizontally
+G1 X${data.textPosition.x + 10 * data.textScale} Y${data.textPosition.y + 5 * data.textScale} ; Draw text vertically
+G1 X${data.textPosition.x} Y${data.textPosition.y + 5 * data.textScale} ; Draw text back to start
+G1 X${data.textPosition.x} Y${data.textPosition.y} ; Close text box
+`;
+
   const frontGcodeContent: string = `
 G21
 G0 X5 Y5
@@ -189,7 +154,7 @@ G2 X5 Y40 R18
 G1 X5 Y5
 `;
 
-  const backGcodeContent: string =`
+  const backGcodeContent: string = `
 G21
 G0 X5 Y5
 G1 X35 Y5 F1000
@@ -212,6 +177,8 @@ G3 X10 Y10 R12.168
 
   // Return the appropriate G-code based on piece type
   switch (pieceType) {
+    case 'text':
+      return textGcodeContent;
     case 'front':
       return frontGcodeContent;
     case 'back':

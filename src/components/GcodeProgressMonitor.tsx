@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useWebSocketContext } from "./WebSocketProvider";
+import { useState } from "react";
 
 interface GcodeProgress {
   progress: number;
@@ -10,31 +9,62 @@ interface GcodeProgress {
 }
 
 export function GcodeProgressMonitor() {
-  const { lastMessage } = useWebSocketContext();
   const [progress, setProgress] = useState<GcodeProgress | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
-  useEffect(() => {
-    if (lastMessage?.type === "gcode_progress") {
-      const progressData = lastMessage.data as GcodeProgress;
-      setProgress(progressData);
-      setIsVisible(true);
+  // Function to manually update progress (can be called from parent components)
+  // const updateProgress = (progressData: GcodeProgress) => {
+  //   setProgress(progressData);
+  //   setIsVisible(true);
 
-      // Auto-hide after completion
-      if (progressData.progress >= 100) {
+  //   // Auto-hide after completion
+  //   if (progressData.progress >= 100) {
+  //     setTimeout(() => {
+  //       setIsVisible(false);
+  //       setProgress(null);
+  //     }, 3000);
+  //   }
+  // };
+
+  // // Function to hide the monitor
+  // const hideMonitor = () => {
+  //   setIsVisible(false);
+  //   setProgress(null);
+  // };
+
+  // Function to simulate progress (for testing purposes)
+  const simulateProgress = () => {
+    let currentProgress = 0;
+    setIsVisible(true);
+
+    const interval = setInterval(() => {
+      currentProgress += 10;
+      setProgress({
+        progress: currentProgress,
+        status: currentProgress < 100 ? "Executing G-code..." : "Completed",
+        machineId: "192.168.1.100",
+      });
+
+      if (currentProgress >= 100) {
+        clearInterval(interval);
         setTimeout(() => {
           setIsVisible(false);
           setProgress(null);
         }, 3000);
       }
-    } else if (lastMessage?.type === "error") {
-      setIsVisible(false);
-      setProgress(null);
-    }
-  }, [lastMessage]);
+    }, 500);
+  };
 
   if (!isVisible || !progress) {
-    return null;
+    return (
+      // Optional: Show a button to test the progress monitor
+      <button
+        onClick={simulateProgress}
+        className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-700"
+      >
+        Test Progress
+      </button>
+    );
   }
 
   return (
@@ -77,3 +107,6 @@ export function GcodeProgressMonitor() {
     </div>
   );
 }
+
+// Export the component and helper functions
+export default GcodeProgressMonitor;

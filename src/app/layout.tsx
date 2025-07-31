@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { WebSocketProvider } from "@/components/WebSocketProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,9 +34,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen`}
       >
-        <WebSocketProvider url="ws://localhost:8080">
-          {children}
-        </WebSocketProvider>
+        {children}
       </body>
     </html>
   );
