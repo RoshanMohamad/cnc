@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner"; // Updated import
 import { Loader2, WifiOff } from "lucide-react";
-import { useWebSocketContext } from "./WebSocketProvider";
 
 export interface MachineConnectionDetails {
   id: string;
@@ -42,7 +41,6 @@ export function MachineConnection({ onConnect }: MachineConnectionProps) {
   const [networkPort, setNetworkPort] = useState("8080");
   const [isConnecting, setIsConnecting] = useState(false);
 
-  const { broadcastMachineStatus } = useWebSocketContext();
 
   const handleConnect = async () => {
     setIsConnecting(true);
@@ -62,9 +60,6 @@ export function MachineConnection({ onConnect }: MachineConnectionProps) {
         address: connectionType === "network" ? address : undefined,
         status: "connected",
       };
-
-      // Broadcast machine connection via WebSocket
-      broadcastMachineStatus(machineDetails.id, "connected");
 
       // Updated Sonner toast
       toast.success(`Successfully connected to ${machineDetails.name}`, {
