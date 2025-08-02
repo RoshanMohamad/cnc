@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 // types/gcode.ts
 export interface GcodeRequest {
   machineId: string;
-  pieceType: 'text' | 'front' | 'back' | 'sleeve'; // Add pieceType
+  pieceType: 'front' | 'back' | 'sleeve'; // Add pieceType
   tshirtSize?: string;
   tshirtStyle?: string;
   textContent?: string;
@@ -21,7 +21,7 @@ export interface GcodeRequest {
 }
 
 interface TShirtSpecs {
-  pieceType: 'text' | 'front' | 'back' | 'sleeve'; // Add pieceType
+  pieceType:  'front' | 'back' | 'sleeve'; // Add pieceType
   tshirtSize: string;
   tshirtStyle: string;
   textContent: string;
@@ -133,16 +133,6 @@ function generateTshirtGcode(data: TShirtSpecs): string {
     pieceType,
   } = data;
 
-  const textGcodeContent: string = `
-G21
-G0 X${data.textPosition.x} Y${data.textPosition.y}
-G1 F${data.speed}
-G1 X${data.textPosition.x + 10 * data.textScale} Y${data.textPosition.y} ; Draw text horizontally
-G1 X${data.textPosition.x + 10 * data.textScale} Y${data.textPosition.y + 5 * data.textScale} ; Draw text vertically
-G1 X${data.textPosition.x} Y${data.textPosition.y + 5 * data.textScale} ; Draw text back to start
-G1 X${data.textPosition.x} Y${data.textPosition.y} ; Close text box
-`;
-
   const frontGcodeContent: string = `
 G21
 G0 X5 Y5
@@ -177,8 +167,6 @@ G3 X10 Y10 R12.168
 
   // Return the appropriate G-code based on piece type
   switch (pieceType) {
-    case 'text':
-      return textGcodeContent;
     case 'front':
       return frontGcodeContent;
     case 'back':

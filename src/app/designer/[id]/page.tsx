@@ -92,8 +92,9 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     drawRulers(ctx, canvas.width, canvas.height);
   });
 
+
   // G-CODE GENERATION FUNCTIONS FOR EACH PIECE
-  const generatePieceGcode = async (pieceType: "text"|"front" | "back" | "sleeve") => {
+  const generatePieceGcode = async (pieceType:"front" | "back" | "sleeve") => {
     setIsGenerating((prev) => ({ ...prev, [pieceType]: true }));
     setGcodeResults((prev) => ({
       ...prev,
@@ -102,6 +103,63 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
 
     try {
       const response = await fetch("/api/gcode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          machineId: machine.ipAddress,
+          pieceType: pieceType, // This is the key addition
+          tshirtSize: tshirt.size,
+          tshirtStyle: tshirt.style,
+          textContent: text.content,
+          textPosition: text.position,
+          textScale: text.scale,
+          textRotation: text.rotation,
+          textFont: text.fontFamily,
+          textBold: text.isBold,
+          textItalic: text.isItalic,
+          textAlign: text.align,
+          textColor: text.color,
+          material: "cotton",
+          thickness: machine.materialThickness,
+          speed: machine.cuttingSpeed,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        setGcodeResults((prev) => ({
+          ...prev,
+          [pieceType]: `Error: ${data.error || "Unknown error"}`,
+        }));
+      } else {
+        setGcodeResults((prev) => ({
+          ...prev,
+          [pieceType]: data.gcode || "No G-code returned.",
+        }));
+      }
+    } catch (err) {
+      setGcodeResults((prev) => ({
+        ...prev,
+        [pieceType]: `Network error: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      }));
+    }
+
+    setIsGenerating((prev) => ({ ...prev, [pieceType]: false }));
+  };
+
+  //text G-code generation
+   const generateTextGcode = async (pieceType: "text") => {
+    setIsGenerating((prev) => ({ ...prev, [pieceType]: true }));
+    setGcodeResults((prev) => ({
+      ...prev,
+      [pieceType]: "Generating, please wait...",
+    }));
+
+    try {
+      const response = await fetch("/api/servo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -734,7 +792,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
           <div className="flex gap-3">
             <Button
               variant="default"
-              onClick={() => generatePieceGcode("text")}
+              onClick={() => generateTextGcode("text")}
               disabled={isGenerating.text}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
             >
