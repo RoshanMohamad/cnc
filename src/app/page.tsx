@@ -21,6 +21,7 @@ import {
   Wifi,
 } from "lucide-react";
 import { GcodeProgressMonitor } from "@/components/GcodeProgressMonitor";
+import { MachineStatusDisplay } from "@/components/MachineStatusDisplay";
 
 export default function Home() {
   return (
@@ -102,7 +103,11 @@ export default function Home() {
               </Button>
             </Link>
             <Link href="/designer/new">
-              <Button variant="outline" size="lg" className="group cursor-pointer">
+              <Button
+                variant="outline"
+                size="lg"
+                className="group cursor-pointer"
+              >
                 <Layers className="w-5 h-5 mr-2" />
                 Design G-Code
               </Button>
@@ -184,37 +189,11 @@ export default function Home() {
                   Machine Status
                 </CardTitle>
                 <CardDescription>
-                  Connected machines and their current status
+                  Real-time ESP32 and machine status monitoring
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-                    <span className="font-medium">CNC Router 01</span>
-                  </div>
-                  <span className="text-sm text-green-700 bg-green-100 px-2 py-1 rounded">
-                    Online
-                  </span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
-                    <span className="font-medium">Plasma Cutter 01</span>
-                  </div>
-                  <span className="text-sm text-yellow-700 bg-yellow-100 px-2 py-1 rounded">
-                    Standby
-                  </span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
-                    <span className="font-medium">Laser Engraver 01</span>
-                  </div>
-                  <span className="text-sm text-red-700 bg-red-100 px-2 py-1 rounded">
-                    Offline
-                  </span>
-                </div>
+              <CardContent>
+                <MachineStatusDisplay />
               </CardContent>
             </Card>
           </div>

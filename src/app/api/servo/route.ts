@@ -134,11 +134,8 @@ function generateTshirtGcode(data: TShirtSpecs) {
 
   const textGcodeContent: string = `
 G21
-G0 X10 Y10
-G1 X20 Y10
-G1 X20 Y20
-G1 X5 Y20
-G3 X10 Y10 R12.168
+G90
+G0 Z5
 `;
   // Return the appropriate G-code based on piece type
   switch (pieceType) {
@@ -148,4 +145,3 @@ G3 X10 Y10 R12.168
       throw new Error(`Unknown piece type: ${pieceType}`);
   }
 }
-

@@ -177,4 +177,3 @@ G3 X10 Y10 R12.168
       throw new Error(`Unknown piece type: ${pieceType}`);
   }
 }
-

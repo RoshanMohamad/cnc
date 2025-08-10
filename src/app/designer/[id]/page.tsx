@@ -22,9 +22,10 @@ import {
   ZoomIn,
   ZoomOut,
   Grid,
-  Download,
   Shirt,
   Square,
+  Upload,
+  FileImage,
 } from "lucide-react";
 
 // Main Designer Page Component
@@ -38,6 +39,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     front: "",
     back: "",
     sleeve: "",
+    svg: "", // Add this
   });
 
   const [isGenerating, setIsGenerating] = useState({
@@ -45,6 +47,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     front: false,
     back: false,
     sleeve: false,
+    svg: false, // Add this
   });
 
   // T-Shirt Properties State
@@ -70,12 +73,30 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
   // Machine & Cutting Properties State
   const [machine, setMachine] = useState({
     type: "laser" as "laser" | "dragKnife",
-    ipAddress: "192.168.8.130",
+    ipAddress: "192.168.8.121",
     isSending: false,
     sendStatus: "",
     materialThickness: 0.5,
     cuttingSpeed: 2000,
     cuttingDepth: 0.6,
+  });
+
+  // SVG state management
+  const [svgData, setSvgData] = useState({
+    content: "",
+    fileName: "",
+    isUploaded: false,
+  });
+
+  const [svgParams, setSvgParams] = useState({
+    dpi: 96,
+    feed_rate: 1000,
+    seek_rate: 3000,
+    cut_depth: 1,
+    safe_height: 3,
+    tool_diameter: 0.1,
+    tolerance: 0.1,
+    passes: 1,
   });
 
   // Main canvas drawing logic
@@ -92,9 +113,8 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     drawRulers(ctx, canvas.width, canvas.height);
   });
 
-
   // G-CODE GENERATION FUNCTIONS FOR EACH PIECE
-  const generatePieceGcode = async (pieceType:"front" | "back" | "sleeve") => {
+  const generatePieceGcode = async (pieceType: "front" | "back" | "sleeve") => {
     setIsGenerating((prev) => ({ ...prev, [pieceType]: true }));
     setGcodeResults((prev) => ({
       ...prev,
@@ -150,8 +170,8 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     setIsGenerating((prev) => ({ ...prev, [pieceType]: false }));
   };
 
-  //text G-code generation
-   const generateTextGcode = async (pieceType: "text") => {
+  // text G-code generation
+  const generateTextGcode = async (pieceType: "text") => {
     setIsGenerating((prev) => ({ ...prev, [pieceType]: true }));
     setGcodeResults((prev) => ({
       ...prev,
@@ -207,22 +227,6 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     setIsGenerating((prev) => ({ ...prev, [pieceType]: false }));
   };
 
-  // Download G-code for specific piece
-  const handleDownloadGcode = (pieceType:"text" | "front" | "back" | "sleeve") => {
-    const gcode = gcodeResults[pieceType];
-    if (!gcode || gcode.includes("Error:") || gcode.includes("Generating"))
-      return;
-
-    const blob = new Blob([gcode], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${tshirt.designName.replace(/ /g, "_")}_${pieceType}.gcode`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 
   // Get current G-code for display
   const getCurrentGcode = () => {
@@ -545,10 +549,77 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     return path;
   };
 
+  // SVG file handler
+  const handleSVGUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === "image/svg+xml") {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        setSvgData({
+          content,
+          fileName: file.name,
+          isUploaded: true,
+        });
+      };
+      reader.readAsText(file);
+    } else {
+      alert("Please select a valid SVG file");
+    }
+  };
+
+  // SVG to G-code conversion function
+  const convertSVGToGcode = async () => {
+    if (!svgData.content) {
+      alert("Please upload an SVG file first");
+      return;
+    }
+
+    setIsGenerating((prev) => ({ ...prev, svg: true }));
+    setGcodeResults((prev) => ({
+      ...prev,
+      svg: "Converting SVG to G-code...",
+    }));
+
+    try {
+      const response = await fetch("/api/svg-to-gcode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          svgContent: svgData.content,
+          params: svgParams,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        setGcodeResults((prev) => ({
+          ...prev,
+          svg: `Error: ${data.error || "Unknown error"}`,
+        }));
+      } else {
+        setGcodeResults((prev) => ({
+          ...prev,
+          svg: data.gcode || "No G-code returned.",
+        }));
+      }
+    } catch (err) {
+      setGcodeResults((prev) => ({
+        ...prev,
+        svg: `Network error: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      }));
+    }
+
+    setIsGenerating((prev) => ({ ...prev, svg: false }));
+  };
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Left Panel: Controls */}
-      <div className="w-96 bg-white/70 backdrop-blur-md border-r border-white/20 shadow-xl overflow-y-auto">
+      <div className="w-auto bg-white/70 backdrop-blur-md border-r border-white/20 shadow-xl overflow-y-auto">
         <div className="p-6 border-b border-white/20 bg-gradient-to-r from-blue-600/10 to-purple-600/10">
           <div className="flex items-center space-x-3 mb-2">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
@@ -579,10 +650,10 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
                 Text
               </TabsTrigger>
               <TabsTrigger
-                value="machine"
+                value="svg"
                 className="flex-1 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
               >
-                Machine
+                SVG
               </TabsTrigger>
             </TabsList>
 
@@ -701,6 +772,134 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
                     className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500"
                   />
                 </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="svg" className="space-y-4 pt-4">
+              <div className="space-y-4">
+                {/* SVG Upload Section */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Upload SVG File
+                  </Label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    {!svgData.isUploaded ? (
+                      <div>
+                        <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600 mb-2">
+                          Click to upload an SVG file
+                        </p>
+                        <input
+                          type="file"
+                          accept=".svg,image/svg+xml"
+                          onChange={handleSVGUpload}
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <FileImage className="mx-auto h-8 w-8 text-green-500 mb-2" />
+                        <p className="text-sm text-green-600 font-medium">
+                          {svgData.fileName}
+                        </p>
+                        <button
+                          onClick={() =>
+                            setSvgData({
+                              content: "",
+                              fileName: "",
+                              isUploaded: false,
+                            })
+                          }
+                          className="text-xs text-red-500 hover:text-red-700 mt-1"
+                        >
+                          Remove file
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* SVG Parameters */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">
+                      DPI
+                    </Label>
+                    <Input
+                      type="number"
+                      value={svgParams.dpi}
+                      onChange={(e) =>
+                        setSvgParams({
+                          ...svgParams,
+                          dpi: parseInt(e.target.value) || 96,
+                        })
+                      }
+                      className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">
+                      Feed Rate (mm/min)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={svgParams.feed_rate}
+                      onChange={(e) =>
+                        setSvgParams({
+                          ...svgParams,
+                          feed_rate: parseInt(e.target.value) || 1000,
+                        })
+                      }
+                      className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">
+                      Cut Depth (mm)
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={svgParams.cut_depth}
+                      onChange={(e) =>
+                        setSvgParams({
+                          ...svgParams,
+                          cut_depth: parseFloat(e.target.value) || 1,
+                        })
+                      }
+                      className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">
+                      Tool Diameter (mm)
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={svgParams.tool_diameter}
+                      onChange={(e) =>
+                        setSvgParams({
+                          ...svgParams,
+                          tool_diameter: parseFloat(e.target.value) || 0.1,
+                        })
+                      }
+                      className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Convert Button */}
+                <Button
+                  onClick={convertSVGToGcode}
+                  disabled={!svgData.isUploaded || isGenerating.svg}
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
+                >
+                  {isGenerating.svg ? "Converting..." : "Convert SVG to G-code"}
+                </Button>
               </div>
             </TabsContent>
 
@@ -829,48 +1028,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
               <Square className="mr-2 h-4 w-4" />
               {isGenerating.sleeve ? "Generating..." : "Sleeve"}
             </Button>
-          </div>
-
-          <div className="flex gap-2">
-            {/* Download buttons for each piece */}
-            <Button
-              variant="outline"
-              onClick={() => handleDownloadGcode("front")}
-              disabled={
-                !gcodeResults.front ||
-                gcodeResults.front.includes("Error:") ||
-                gcodeResults.front.includes("Generating")
-              }
-              className="bg-white/50 backdrop-blur-sm border-white/30 hover:bg-white/70"
-            >
-              <Download className="mr-2 h-4 w-4" /> Front
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleDownloadGcode("back")}
-              disabled={
-                !gcodeResults.back ||
-                gcodeResults.back.includes("Error:") ||
-                gcodeResults.back.includes("Generating")
-              }
-              className="bg-white/50 backdrop-blur-sm border-white/30 hover:bg-white/70"
-            >
-              <Download className="mr-2 h-4 w-4" /> Back
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleDownloadGcode("sleeve")}
-              disabled={
-                !gcodeResults.sleeve ||
-                gcodeResults.sleeve.includes("Error:") ||
-                gcodeResults.sleeve.includes("Generating")
-              }
-              className="bg-white/50 backdrop-blur-sm border-white/30 hover:bg-white/70"
-            >
-              <Download className="mr-2 h-4 w-4" /> Sleeve
-            </Button>
-          </div>
-
+          </div>     
           <div className="flex gap-2 items-center bg-white/50 backdrop-blur-sm rounded-lg p-2">
             <Button
               variant="outline"
@@ -926,7 +1084,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
       </div>
 
       {/* Right Panel: G-code Viewer */}
-      <div className="w-96 bg-gray-900/90 backdrop-blur-md text-white font-mono flex flex-col shadow-xl">
+      <div className="w-80 bg-gray-900/90 backdrop-blur-md text-white font-mono flex flex-col shadow-xl">
         <div className="p-4 border-b border-gray-700/50 bg-gradient-to-r from-gray-800/50 to-gray-900/50">
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
