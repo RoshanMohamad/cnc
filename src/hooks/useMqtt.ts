@@ -60,8 +60,8 @@ export const useMqtt = (options: UseMqttOptions = {}): UseMqttReturn => {
             return;
         }
 
-        if (isConnected) {
-            console.log('Already connected');
+        if (isConnected || isConnecting) {
+            console.log('Already connected or connecting');
             return;
         }
 
@@ -69,10 +69,34 @@ export const useMqtt = (options: UseMqttOptions = {}): UseMqttReturn => {
         setError(null);
 
         try {
-            // Dynamic import to avoid SSR issues
-            const mqtt = await import('mqtt');
+            // Only run in browser environment
+            if (typeof window === 'undefined') {
+                setError('MQTT connection only available in browser');
+                setIsConnecting(false);
+                return;
+            }
 
-            const mqttClient = mqtt.connect(brokerUrl, {
+            // Dynamic import with better error handling
+            console.log('Importing MQTT library...');
+            const mqttLib = await import('mqtt');
+
+            // Try different ways to access the connect function
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let connectFunction: any;
+
+            if (mqttLib.default && typeof mqttLib.default.connect === 'function') {
+                connectFunction = mqttLib.default.connect;
+            } else if (typeof mqttLib.connect === 'function') {
+                connectFunction = mqttLib.connect;
+            } else if (mqttLib.default && typeof mqttLib.default === 'function') {
+                connectFunction = mqttLib.default;
+            } else {
+                console.error('MQTT library structure:', mqttLib);
+                throw new Error('MQTT connect function not found in library');
+            }
+
+            console.log('Creating MQTT client...');
+            const mqttClient = connectFunction(brokerUrl, {
                 clientId,
                 username: username || undefined,
                 password: password || undefined,
@@ -80,8 +104,10 @@ export const useMqtt = (options: UseMqttOptions = {}): UseMqttReturn => {
                 connectTimeout: 30000,
                 reconnectPeriod: 1000,
                 keepalive: 60,
+                protocolVersion: 4,
             }) as MqttClient;
 
+            // Set up event handlers
             mqttClient.on('connect', () => {
                 console.log('MQTT connected to:', brokerUrl);
                 setIsConnected(true);
@@ -120,7 +146,7 @@ export const useMqtt = (options: UseMqttOptions = {}): UseMqttReturn => {
             setError(err instanceof Error ? err.message : 'Failed to connect');
             setIsConnecting(false);
         }
-    }, [brokerUrl, clientId, username, password, isConnected]);
+    }, [brokerUrl, clientId, username, password, isConnected, isConnecting]);
 
     const disconnect = useCallback(() => {
         if (client) {
