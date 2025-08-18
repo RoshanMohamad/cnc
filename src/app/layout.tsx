@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tach Titans",
+  title: "Tech Titans",
   description:
     "Advanced CNC control software with real-time monitoring and precision toolpath generation",
 };
