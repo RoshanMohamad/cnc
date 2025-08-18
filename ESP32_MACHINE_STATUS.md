@@ -11,7 +11,7 @@ Your CNC application now has **real-time ESP32 machine status monitoring**! 🎉
 - **Heartbeat Monitoring** - Automatically detects if machines go offline
 - **Visual Indicators** - Color-coded status with ESP32 connection icons
 
-### MQTT Topics for ESP32 Communication
+### HTTP Endpoints for ESP32 Communication
 
 ```
 esp32/cnc-01/online      - ESP32 powered on
@@ -49,7 +49,7 @@ cnc/cnc-01/commands      - Commands to ESP32
 
 - **Detailed machine status** with timestamps
 - **ESP32 Simulator** for testing
-- **MQTT message monitoring**
+- **HTTP API communication**
 
 ## 🔧 ESP32 Setup Instructions
 
@@ -134,7 +134,7 @@ To add more machines:
 
 ## 🚨 Testing Commands
 
-Use the simulator or send MQTT messages:
+Use the simulator or send HTTP requests:
 
 ```bash
 # Power on CNC Router 01

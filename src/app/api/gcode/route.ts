@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 export interface GcodeRequest {
   machineId: string;
   pieceType: 'front' | 'back' | 'sleeve'; // Add pieceType
+  packetSize?: number; // Add packet size option
   tshirtSize?: string;
   tshirtStyle?: string;
   textContent?: string;
@@ -20,8 +21,16 @@ export interface GcodeRequest {
   speed?: number;
 }
 
+export interface GcodePacket {
+  packet_id: number;
+  packet_lines: string[];
+  lines_in_packet: number;
+  is_last_packet: boolean;
+}
+
 interface TShirtSpecs {
-  pieceType:  'front' | 'back' | 'sleeve'; // Add pieceType
+  pieceType: 'front' | 'back' | 'sleeve'; // Add pieceType
+  packetSize: number; // Add packet size
   tshirtSize: string;
   tshirtStyle: string;
   textContent: string;
@@ -58,8 +67,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate G-code with proper typing
+    const packetSize = body.packetSize ?? 20; // Default to 20 lines per packet
+
     const gcode = generateTshirtGcode({
       pieceType: body.pieceType,
+      packetSize: packetSize,
       tshirtSize: body.tshirtSize ?? "M",
       tshirtStyle: body.tshirtStyle ?? "classic",
       textContent: body.textContent ?? "TEXT",
@@ -76,17 +88,35 @@ export async function POST(request: NextRequest) {
       speed: body.speed ?? 1000,
     });
 
-    const esp32Response = await sendGcodeToESP32(body.machineId, gcode);
+    // Return G-code for use with GcodeSender component (handshake system)
+    const lines = gcode
+      .split('\n')
+      .map(line => line.trim())
+      .filter((line: string) => line.length > 0 && !line.startsWith(';'));
 
-    if (!esp32Response.success) {
-      throw new Error(esp32Response.error || "Failed to send G-code to ESP32");
+    // Create packets of specified size (default 20 lines)
+    const packets: GcodePacket[] = [];
+    for (let i = 0; i < lines.length; i += packetSize) {
+      const packetLines = lines.slice(i, i + packetSize);
+      packets.push({
+        packet_id: Math.floor(i / packetSize) + 1,
+        packet_lines: packetLines,
+        lines_in_packet: packetLines.length,
+        is_last_packet: i + packetSize >= lines.length
+      });
     }
 
     return NextResponse.json({
       success: true,
       pieceType: body.pieceType,
-      gcode,
-      esp32Response: esp32Response.message,
+      gcode: lines.join('\n'), // Full G-code without empty lines
+      gcode_lines: lines,
+      total_lines: lines.length,
+      packet_size: packetSize,
+      total_packets: packets.length,
+      packets: packets, // Array of G-code packets
+      machine_id: body.machineId,
+      message: `G-code generated successfully with ${packets.length} packets of ${packetSize} lines each. Use GcodeSender component for transmission.`,
     });
   } catch (error: unknown) {
     console.error("Error:", error);
@@ -99,71 +129,85 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function sendGcodeToESP32(machineId: string, gcode: string) {
-  const esp32Endpoint = `http://${machineId}/api/gcode`; // Replace with ESP32 IP
-
-  try {
-    const response = await fetch(esp32Endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: gcode,
-    });
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: `ESP32 returned ${response.status}`,
-      };
-    }
-
-    return {
-      success: true,
-      message: "G-code sent to ESP32",
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: `Network error: ${error instanceof Error ? error.message : String(error)}`,
-    };
-  }
-}
-
 function generateTshirtGcode(data: TShirtSpecs): string {
   const {
     pieceType,
+    // packetSize is not used in this function but kept for consistency
   } = data;
 
-  const frontGcodeContent: string = `
+  const frontGcodeContent: string = `; Front T-Shirt Piece - Valid GRBL Commands
 G21
-G0 X5 Y5
-G1 X35 Y5 F1000
-G1 X35 Y40
-G2 X25 Y55 R18
-G1 X15 Y55
-G2 X5 Y40 R18
+F500
+G92 X0 Y0 Z0
+G1 Z0
 G1 X5 Y5
-`;
-
-  const backGcodeContent: string = `
-G21
-G0 X5 Y5
-G1 X35 Y5 F1000
-G1 X35 Y40
-G2 X25 Y55 R18
+M3 S10
+G1 Z0
+G1 X5 Y35
+G1 Z0
+M3 S30
+G1 Z0
+G3 X10 Y55 R37
+G1 Z0
+M3 S55
+G1 Z0
 G1 X15 Y55
-G2 X5 Y40 R18
+G1 Z0
+M3 S60
+G1 Z0
+G3 X20 Y54 R8
+G1 Z0
+M3 S45
+G1 Z0
+G3 X25 Y55 R8
+G1 Z0
+M3 S55
+G1 Z0
+G1 X30 Y55
+G1 Z0
+M3 S90
+G1 Z0
+G3 X35 Y35 R37
+G1 Z0
+M3 S10
+G1 Z0
+G1 X35 Y5
+G1 Z0
+M3 S55
+G1 Z0
 G1 X5 Y5
-`;
+G1 Z0
+G1 X0 Y0`;
 
-  const sleeveGcodeContent: string = `
+  const backGcodeContent: string = `; Back T-Shirt Piece - Valid GRBL Commands
 G21
+G90
+G92 X0 Y0 Z0
+F1000
+G0 X5 Y5
+G1 Z-1 F500
+G1 X35 Y5
+G1 X35 Y40
+G2 X25 Y55 I-10 J0
+G1 X15 Y55
+G2 X5 Y40 I0 J-15
+G1 X5 Y5
+G0 Z5
+G0 X0 Y0`;
+
+  const sleeveGcodeContent: string = `; Sleeve Piece - Valid GRBL Commands
+G21
+G90
+G92 X0 Y0 Z0
+F1000
 G0 X10 Y10
+G1 Z-1 F500
 G1 X20 Y10
 G1 X20 Y20
 G1 X5 Y20
-G3 X10 Y10 R12.168
-
-`;
+G3 X10 Y10 I5 J-10
+G0 Z5
+G0 X0 Y0`;
 
   // Return the appropriate G-code based on piece type
   switch (pieceType) {

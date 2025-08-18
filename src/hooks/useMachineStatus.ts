@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useMqtt } from './useMqtt';
 
 export interface MachineStatus {
     id: string;
@@ -15,6 +14,7 @@ export interface MachineStatus {
 interface UseMachineStatusReturn {
     machines: MachineStatus[];
     updateMachineStatus: (machineId: string, status: Partial<MachineStatus>) => void;
+    updateMachineFromHTTP: (machineId: string, data: { status?: string; timestamp?: number }) => void;
 }
 
 // Default machine configurations
@@ -47,136 +47,33 @@ const DEFAULT_MACHINES: MachineStatus[] = [
 
 export const useMachineStatus = (): UseMachineStatusReturn => {
     const [machines, setMachines] = useState<MachineStatus[]>(DEFAULT_MACHINES);
-    const { isConnected, subscribe, messages } = useMqtt();
 
-    // Subscribe to machine status topics when MQTT is connected
-    useEffect(() => {
-        if (isConnected) {
-            // Subscribe to all machine status topics
-            subscribe('machines/+/status');
-            subscribe('machines/+/heartbeat');
-            subscribe('esp32/+/online');
-            subscribe('esp32/+/offline');
-            subscribe('cnc/+/status');
-
-            console.log('Subscribed to machine status topics');
-        }
-    }, [isConnected, subscribe]);
-
-    // Process incoming MQTT messages
-    useEffect(() => {
-        if (messages.length === 0) return;
-
-        const latestMessage = messages[messages.length - 1];
-        const { topic, message } = latestMessage;
-
-        console.log('Processing machine status message:', { topic, message });
-
-        // Parse ESP32 online/offline messages
-        if (topic.includes('esp32') && topic.includes('online')) {
-            const machineId = extractMachineId(topic);
-            if (machineId) {
-                updateMachineFromESP32(machineId, 'online', message);
-            }
-        }
-
-        if (topic.includes('esp32') && topic.includes('offline')) {
-            const machineId = extractMachineId(topic);
-            if (machineId) {
-                updateMachineFromESP32(machineId, 'offline', message);
-            }
-        }
-
-        // Parse machine status messages
-        if (topic.includes('machines') && topic.includes('status')) {
-            const machineId = extractMachineId(topic);
-            if (machineId) {
-                updateMachineFromStatus(machineId, message);
-            }
-        }
-
-        // Parse CNC specific status messages
-        if (topic.includes('cnc') && topic.includes('status')) {
-            const machineId = extractMachineId(topic) || 'cnc-01';
-            updateMachineFromStatus(machineId, message);
-        }
-
-        // Parse heartbeat messages
-        if (topic.includes('heartbeat')) {
-            const machineId = extractMachineId(topic);
-            if (machineId) {
-                updateMachineHeartbeat(machineId);
-            }
-        }
-
-    }, [messages]);
-
-    const extractMachineId = (topic: string): string | null => {
-        // Extract machine ID from topics like "esp32/cnc-01/online" or "machines/cnc-01/status"
-        const parts = topic.split('/');
-        if (parts.length >= 2) {
-            return parts[1]; // Assumes format: prefix/machineId/suffix
-        }
-        return null;
-    };
-
-    const updateMachineFromESP32 = (machineId: string, espStatus: 'online' | 'offline', message: string) => {
+    const updateMachineFromHTTP = (machineId: string, data: { status?: string; timestamp?: number }) => {
         setMachines(prev => prev.map(machine => {
-            if (machine.id === machineId || machine.name.toLowerCase().includes(machineId.toLowerCase())) {
-                const newStatus = espStatus === 'online' ? 'online' : 'offline';
-                console.log(`ESP32 ${espStatus} for ${machine.name}: ${message}`);
+            if (machine.id === machineId) {
+                let status: MachineStatus['status'] = 'offline';
 
-                return {
-                    ...machine,
-                    status: newStatus,
-                    esp32Connected: espStatus === 'online',
-                    lastSeen: new Date(),
-                };
-            }
-            return machine;
-        }));
-    };
+                // Parse HTTP data
+                if (data.status) {
+                    const statusMsg = data.status.toLowerCase();
+                    if (statusMsg.includes('online') || statusMsg.includes('ready') || statusMsg.includes('idle')) {
+                        status = 'online';
+                    } else if (statusMsg.includes('standby') || statusMsg.includes('waiting')) {
+                        status = 'standby';
+                    } else if (statusMsg.includes('error') || statusMsg.includes('fault')) {
+                        status = 'error';
+                    } else if (statusMsg.includes('offline') || statusMsg.includes('disconnected')) {
+                        status = 'offline';
+                    }
+                }
 
-    const updateMachineFromStatus = (machineId: string, statusMessage: string) => {
-        let status: MachineStatus['status'] = 'offline';
-
-        // Parse status message
-        const msg = statusMessage.toLowerCase();
-        if (msg.includes('online') || msg.includes('ready') || msg.includes('idle')) {
-            status = 'online';
-        } else if (msg.includes('standby') || msg.includes('waiting')) {
-            status = 'standby';
-        } else if (msg.includes('error') || msg.includes('fault')) {
-            status = 'error';
-        } else if (msg.includes('offline') || msg.includes('disconnected')) {
-            status = 'offline';
-        }
-
-        setMachines(prev => prev.map(machine => {
-            if (machine.id === machineId || machine.name.toLowerCase().includes(machineId.toLowerCase())) {
-                console.log(`Status update for ${machine.name}: ${statusMessage} -> ${status}`);
+                console.log(`HTTP update for ${machine.name}: ${data.status} -> ${status}`);
 
                 return {
                     ...machine,
                     status,
-                    lastSeen: new Date(),
                     esp32Connected: status === 'online' || status === 'standby',
-                };
-            }
-            return machine;
-        }));
-    };
-
-    const updateMachineHeartbeat = (machineId: string) => {
-        setMachines(prev => prev.map(machine => {
-            if (machine.id === machineId || machine.name.toLowerCase().includes(machineId.toLowerCase())) {
-                return {
-                    ...machine,
                     lastSeen: new Date(),
-                    // If we receive a heartbeat, the ESP32 is definitely connected
-                    esp32Connected: true,
-                    // Keep machine online if it was already online
-                    status: machine.status === 'offline' ? 'online' : machine.status,
                 };
             }
             return machine;
@@ -215,5 +112,6 @@ export const useMachineStatus = (): UseMachineStatusReturn => {
     return {
         machines,
         updateMachineStatus,
+        updateMachineFromHTTP,
     };
 };

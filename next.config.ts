@@ -2,14 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://192.168.8.130/:path*',
-      },
-    ];
-  }
+  // Removed API rewrites - ESP32 should connect directly to Next.js server
 };
 
 export default nextConfig;

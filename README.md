@@ -1,6 +1,6 @@
 # CNC Control System with ESP32 Integration
 
-A professional CNC control and monitoring application built with Next.js, featuring real-time MQTT communication with ESP32 devices for machine status monitoring.
+A professional CNC control and monitoring application built with Next.js, featuring real-time HTTP communication with ESP32 devices for machine status monitoring.
 
 ## 🚀 Features
 
@@ -11,10 +11,10 @@ A professional CNC control and monitoring application built with Next.js, featur
 - **Machine Connection Management** - USB and network machine connectivity
 - **Live Progress Tracking** - Real-time machining progress and status
 
-### 📡 MQTT & ESP32 Integration
+### 📡 HTTP & ESP32 Integration
 
-- **ESP32 Real-time Communication** - Instant machine status updates
-- **MQTT Message Monitoring** - Complete message history and debugging
+- **ESP32 Real-time Communication** - Instant machine status updates via HTTP
+- **G-code Handshake Protocol** - Line-by-line execution with OK confirmation
 - **Multi-machine Support** - CNC Router, Plasma Cutter, Laser Engraver
 - **Heartbeat Monitoring** - Automatic offline detection
 - **Remote Control** - Send G-code commands to ESP32 devices
@@ -30,7 +30,7 @@ A professional CNC control and monitoring application built with Next.js, featur
 
 - **Framework**: Next.js 15.2.4 with React 19
 - **Styling**: Tailwind CSS 4 with Radix UI components
-- **Communication**: MQTT.js for real-time messaging
+- **Communication**: HTTP API for ESP32 communication
 - **Charts**: Recharts for data visualization
 - **Icons**: Lucide React
 - **Notifications**: Sonner for toast messages
@@ -69,7 +69,7 @@ pnpm install
 # Copy the example environment file
 cp .env.local.example .env.local
 
-# Update with your MQTT broker credentials (HiveMQ Cloud example included)
+# Update with your server configuration for ESP32 communication
 ```
 
 4. **Start the development server**
@@ -98,7 +98,7 @@ bun dev
 
 ### 🖥 Monitor Page (`/monitor`)
 
-- **MQTT Communication Panel** - Send/receive messages, subscribe to topics
+- **G-code Sender** - Line-by-line transmission with handshake protocol
 - **ESP32 Simulator** - Test machine connections without hardware
 - **Real-time Machine Status** - Live status cards with ESP32 indicators
 - **G-code Progress Monitor** - Active job tracking and progress
@@ -117,23 +117,21 @@ bun dev
 - **G-code Generation** - Export optimized toolpaths
 - **SVG Import** - Convert vector graphics to G-code
 
-## 📡 MQTT & ESP32 Integration
+## 📡 HTTP & ESP32 Integration
 
-### MQTT Topics
+### HTTP API Endpoints
 
 ```bash
-# ESP32 Connection Status
-esp32/{machine-id}/online     # When ESP32 powers on
-esp32/{machine-id}/offline    # When ESP32 powers off
+# Machine Connection
+POST /api/machines/connect     # ESP32 online/offline status
+POST /api/machines/heartbeat   # Keep-alive messages
 
-# Machine Status Updates
-machines/{machine-id}/status     # Current machine state
-machines/{machine-id}/heartbeat  # Keep-alive messages
+# G-code Communication
+POST /api/machines/send-gcode   # Line-by-line G-code with handshake
+GET  /api/machines/commands     # Get pending commands
 
-# CNC Commands
-cnc/{machine-id}/gcode      # Send G-code commands
-cnc/{machine-id}/commands   # Send control commands
-cnc/{machine-id}/status     # Machine operation status
+# Machine Status
+GET  /api/machines/status       # Current machine states
 ```
 
 ### Supported Machines
@@ -162,30 +160,29 @@ src/
 │   ├── monitor/           # Machine monitoring dashboard
 │   ├── machines/          # Machine connection management
 │   ├── designer/          # G-code designer
-│   └── api/               # API routes (MQTT, machine control)
+│   └── api/               # API routes (HTTP, machine control)
 ├── components/            # React components
 │   ├── ui/               # Base UI components (Radix UI)
-│   ├── MqttMonitor.tsx   # MQTT communication interface
+│   ├── GcodeSender.tsx   # G-code communication with handshake
 │   ├── ESP32Simulator.tsx # ESP32 testing simulator
 │   └── MachineStatusDisplay.tsx # Real-time status cards
 ├── hooks/                # Custom React hooks
-│   ├── useMqtt.ts        # MQTT client management
-│   └── useMachineStatus.ts # Machine status tracking
+│   └── useMachineStatus.ts # Machine status tracking via HTTP
 └── lib/                  # Utility functions
 ```
 
 ### Key Components
 
-#### MQTT Client (`useMqtt.ts`)
+#### G-code Sender (`GcodeSender.tsx`)
 
-- WebSocket-based MQTT connection
-- Automatic reconnection handling
-- Message publishing and subscribing
-- Real-time message history
+- Line-by-line G-code transmission
+- OK handshake protocol with ESP32/Arduino
+- Real-time progress tracking
+- Error handling and recovery
 
 #### Machine Status (`useMachineStatus.ts`)
 
-- ESP32 connection monitoring
+- ESP32 connection monitoring via HTTP
 - Automatic offline detection
 - Multi-machine support
 - Status state management
@@ -202,28 +199,14 @@ npm run dev:all      # Start both app and WebSocket server
 
 ## 🔑 Environment Variables
 
-Create `.env.local` with your MQTT broker configuration:
+Create `.env.local` with your server configuration:
 
 ```bash
-# Enable WebSocket connections
+# Enable WebSocket connections (optional for future features)
 NEXT_PUBLIC_ENABLE_WEBSOCKET=true
 
-# MQTT Broker Configuration (Server-side)
-MQTT_BROKER_URL=ssl://your-broker.hivemq.cloud:8883
-MQTT_USERNAME=your-username
-MQTT_PASSWORD=your-password
-
-# MQTT WebSocket Configuration (Client-side)
-NEXT_PUBLIC_MQTT_BROKER_URL=wss://your-broker.hivemq.cloud:8884/mqtt
-NEXT_PUBLIC_MQTT_USERNAME=your-username
-NEXT_PUBLIC_MQTT_PASSWORD=your-password
-
-# CNC Machine Communication Topics
-NEXT_PUBLIC_MQTT_TOPIC_GCODE=cnc/gcode
-NEXT_PUBLIC_MQTT_TOPIC_STATUS=cnc/status
-NEXT_PUBLIC_MQTT_TOPIC_POSITION=cnc/position
-NEXT_PUBLIC_MQTT_TOPIC_COMMANDS=cnc/commands
-NEXT_PUBLIC_MQTT_TOPIC_EMERGENCY=cnc/emergency
+# Server URL for ESP32 HTTP communication
+NEXT_PUBLIC_SERVER_URL=http://localhost:3000
 ```
 
 ## 🚀 Deployment
@@ -256,9 +239,8 @@ npm run start
 
 ## 📚 Documentation
 
-- **[MQTT Setup Guide](./MQTT_SETUP.md)** - Complete MQTT broker configuration
 - **[ESP32 Integration](./ESP32_MACHINE_STATUS.md)** - Hardware setup and Arduino code
-- **[MQTT Integration Guide](./MQTT_INTEGRATION.md)** - Development documentation
+- **[G-code Handshake Protocol](./ESP32_CNC_Client_Handshake.ino)** - ESP32 bridge implementation
 
 ## 🤝 Contributing
 
@@ -282,7 +264,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Built with [Next.js](https://nextjs.org/) and [React](https://reactjs.org/)
 - UI components from [Radix UI](https://www.radix-ui.com/)
-- MQTT communication via [MQTT.js](https://github.com/mqttjs/MQTT.js)
+- HTTP API communication for ESP32 integration
 - Icons by [Lucide](https://lucide.dev/)
 - Styling with [Tailwind CSS](https://tailwindcss.com/)
 
