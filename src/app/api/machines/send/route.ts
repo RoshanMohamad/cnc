@@ -7,7 +7,19 @@ interface SendGcodeRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const { machineId, gcode }: SendGcodeRequest = await request.json();
+    let requestBody: SendGcodeRequest;
+
+    try {
+      requestBody = await request.json();
+    } catch (jsonError) {
+      console.error("❌ JSON parsing failed in /api/machines/send:", jsonError);
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON in request body" },
+        { status: 400 }
+      );
+    }
+
+    const { machineId, gcode } = requestBody;
 
     // Validate input
     if (!machineId || !gcode) {

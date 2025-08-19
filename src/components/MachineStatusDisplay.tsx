@@ -2,6 +2,7 @@
 
 import { useMachineStatus, MachineStatus } from "@/hooks/useMachineStatus";
 import { Wifi, WifiOff, Zap, AlertCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface MachineStatusDisplayProps {
   className?: string;
@@ -11,6 +12,11 @@ export function MachineStatusDisplay({
   className = "",
 }: MachineStatusDisplayProps) {
   const { machines } = useMachineStatus();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const getStatusColor = (status: MachineStatus["status"]) => {
     switch (status) {
@@ -65,6 +71,11 @@ export function MachineStatusDisplay({
   };
 
   const formatLastSeen = (lastSeen: Date) => {
+    // Prevent hydration mismatch by only calculating time on client
+    if (!mounted) {
+      return "...";
+    }
+
     const now = new Date();
     const diffMs = now.getTime() - lastSeen.getTime();
     const diffSec = Math.floor(diffMs / 1000);

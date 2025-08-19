@@ -2,7 +2,18 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json()
+    let data;
+
+    try {
+      data = await request.json();
+    } catch (jsonError) {
+      console.error("❌ JSON parsing failed in /api/machines/connect:", jsonError);
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON in request body" },
+        { status: 400 }
+      );
+    }
+
     const { machine_id, machine_name, status, timestamp, ip_address } = data
 
     console.log('Machine connection received:', {

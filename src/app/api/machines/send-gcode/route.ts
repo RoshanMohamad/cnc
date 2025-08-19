@@ -12,7 +12,18 @@ const machineStates: {
 
 export async function POST(request: NextRequest) {
     try {
-        const data = await request.json()
+        let data;
+
+        try {
+            data = await request.json();
+        } catch (jsonError) {
+            console.error("❌ JSON parsing failed in /api/machines/send-gcode:", jsonError);
+            return NextResponse.json(
+                { success: false, error: "Invalid JSON in request body" },
+                { status: 400 }
+            );
+        }
+
         const { machine_id, action, gcode, job_id } = data
 
         if (!machine_id) {

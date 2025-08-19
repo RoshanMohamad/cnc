@@ -15,6 +15,7 @@ A professional CNC control and monitoring application built with Next.js, featur
 
 - **ESP32 Real-time Communication** - Instant machine status updates via HTTP
 - **G-code Handshake Protocol** - Line-by-line execution with OK confirmation
+- **G-code Line-by-Line Transmission** - Direct line-by-line sending via loop
 - **Multi-machine Support** - CNC Router, Plasma Cutter, Laser Engraver
 - **Heartbeat Monitoring** - Automatic offline detection
 - **Remote Control** - Send G-code commands to ESP32 devices
@@ -127,12 +128,58 @@ POST /api/machines/connect     # ESP32 online/offline status
 POST /api/machines/heartbeat   # Keep-alive messages
 
 # G-code Communication
-POST /api/machines/send-gcode   # Line-by-line G-code with handshake
-GET  /api/machines/commands     # Get pending commands
+POST /api/gcode?mode=line-by-line  # Direct line-by-line transmission
+POST /api/gcode?mode=batch         # Generate G-code for handshake system
+POST /api/machines/send-gcode      # Line-by-line G-code with handshake
+GET  /api/machines/commands        # Get pending commands
 
 # Machine Status
 GET  /api/machines/status       # Current machine states
 ```
+
+### G-code Transmission Modes
+
+#### 1. Line-by-Line Mode (New)
+
+```javascript
+// Send G-code directly line by line
+const response = await fetch("/api/gcode?mode=line-by-line", {
+  method: "POST",
+  body: JSON.stringify({
+    machineId: "192.168.8.121",
+    pieceType: "front",
+    textContent: "HELLO WORLD",
+  }),
+});
+```
+
+**Features:**
+
+- Direct transmission to ESP32 via loop
+- 100ms delay between lines
+- Error recovery (continues on failed lines)
+- Transmission summary with success rate
+- No handshake required
+
+#### 2. Batch Mode (Original)
+
+```javascript
+// Generate G-code for handshake transmission
+const response = await fetch("/api/gcode?mode=batch", {
+  method: "POST",
+  body: JSON.stringify({
+    machineId: "192.168.8.121",
+    pieceType: "front",
+  }),
+});
+```
+
+**Features:**
+
+- Returns G-code as JSON for GcodeSender component
+- Uses handshake protocol with OK responses
+- Line-by-line with wait-for-OK confirmation
+- Better for critical operations requiring confirmation
 
 ### Supported Machines
 

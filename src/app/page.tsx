@@ -16,10 +16,10 @@ import {
   Target,
   TrendingUp,
   Shield,
+  Users,
   Activity,
   Wifi,
 } from "lucide-react";
-import { GcodeSender } from "@/components/GcodeSender";
 import { MachineStatusDisplay } from "@/components/MachineStatusDisplay";
 
 export default function Home() {
@@ -53,6 +53,12 @@ export default function Home() {
               >
                 G-Code Designer
               </Link>
+              <Link
+                href="/monitor"
+                className="text-gray-600 hover:text-blue-600 transition-colors"
+              >
+                Monitor
+              </Link>
             </div>
           </div>
         </div>
@@ -73,15 +79,16 @@ export default function Home() {
 
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent">
-              G-Code CNC Control
+              Precision Manufacturing
             </span>
             <br />
             <span className="text-gray-900">Made Simple</span>
           </h1>
 
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Generate G-code from T-shirt patterns with packet-based transmission
-            for reliable CNC machining operations.
+            Advanced CNC control with real-time monitoring, intuitive G-code
+            generation, and seamless machine integration for professional
+            manufacturing workflows.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -148,28 +155,26 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              G-Code Generation & Control
+              Real-time Machine Control
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Create and send G-code in 20-line packets for reliable CNC communication.
+              Monitor your CNC machines, track G-code progress, and maintain
+              complete control over your manufacturing process.
             </p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8">
-            {/* G-code Sender */}
+            {/* G-code Progress Monitor */}
             <Card className="bg-white/70 backdrop-blur-md border-white/20 shadow-xl">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-                  G-Code Sender
+                  G-Code Progress
                 </CardTitle>
                 <CardDescription>
-                  Send G-code packets to ESP32 with handshake protocol
+                  Real-time machining progress and status updates
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <GcodeSender />
-              </CardContent>
             </Card>
 
             {/* Machine Status */}
@@ -196,10 +201,11 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              G-Code Features
+              Professional Features
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Essential tools for G-code generation and CNC control.
+              Everything you need for professional CNC operations, from design
+              to production.
             </p>
           </div>
 
@@ -207,42 +213,43 @@ export default function Home() {
             {[
               {
                 icon: Layers,
-                title: "Packet-Based G-Code",
+                title: "G-Code Generation",
                 description:
-                  "Break G-code into 20-line packets for reliable transmission",
+                  "Intuitive visual designer for creating optimized toolpaths",
                 color: "from-blue-500 to-cyan-500",
               },
               {
                 icon: Shield,
-                title: "Handshake Protocol",
+                title: "Safety Controls",
                 description:
-                  "ESP32 waits for 'OK' confirmation before sending next packet",
+                  "Advanced safety systems with emergency stop and monitoring",
                 color: "from-green-500 to-emerald-500",
               },
               {
-                icon: Target,
-                title: "T-Shirt Patterns",
+                icon: Users,
+                title: "Multi-User Access",
                 description:
-                  "Generate G-code for front, back, and sleeve pieces",
+                  "Secure user management with role-based permissions",
                 color: "from-purple-500 to-violet-500",
               },
               {
                 icon: Activity,
-                title: "Live Status",
+                title: "Live Monitoring",
                 description:
-                  "Real-time ESP32 and machine status monitoring",
+                  "Real-time machine status and performance analytics",
                 color: "from-orange-500 to-red-500",
               },
               {
-                icon: Wifi,
-                title: "HTTP Communication",
-                description: "Direct HTTP API calls to ESP32 devices",
+                icon: Target,
+                title: "Precision Control",
+                description:
+                  "Micro-adjustment capabilities for ultimate precision",
                 color: "from-teal-500 to-cyan-500",
               },
               {
-                icon: Zap,
-                title: "Simple & Fast",
-                description: "No database setup - pure in-memory processing",
+                icon: Wifi,
+                title: "Remote Access",
+                description: "Monitor and control your machines from anywhere",
                 color: "from-indigo-500 to-purple-500",
               },
             ].map((feature, index) => (

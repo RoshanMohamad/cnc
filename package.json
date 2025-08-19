@@ -8,7 +8,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "dev:all": "concurrently \"npm run dev\" \"npm run websocket\""
+    "websocket": "node websocket-server.js",
+    "esp32:sim": "node esp32-simulator.js",
+    "dev:all": "concurrently \"npm run dev\" \"npm run websocket\"",
+    "dev:full": "concurrently \"npm run dev\" \"npm run websocket\" \"npm run esp32:sim\"",
+    "ws:stats": "curl http://localhost:8081/stats",
+    "ws:test": "wscat -c ws://localhost:8081?type=test&id=test-client"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.6",
@@ -19,6 +24,7 @@
     "@radix-ui/react-slot": "^1.1.2",
     "@radix-ui/react-tabs": "^1.1.3",
     "@radix-ui/react-tooltip": "^1.1.8",
+    "@types/ws": "^8.18.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.487.0",
@@ -28,9 +34,11 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^3.1.0",
+    "socket.io-client": "^4.8.1",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.1.0",
-    "tw-animate-css": "^1.2.5"
+    "tw-animate-css": "^1.2.5",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -40,6 +48,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/socket.io": "^3.0.1",
+    "concurrently": "^9.2.0",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
     "tailwindcss": "^4",

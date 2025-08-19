@@ -18,7 +18,17 @@ interface SVGConversionRequest {
 
 export async function POST(request: NextRequest) {
     try {
-        const body: SVGConversionRequest = await request.json();
+        let body: SVGConversionRequest;
+
+        try {
+            body = await request.json();
+        } catch (jsonError) {
+            console.error("❌ JSON parsing failed in /api/svg-to-gcode:", jsonError);
+            return NextResponse.json(
+                { error: "Invalid JSON in request body" },
+                { status: 400 }
+            );
+        }
 
         if (!body.svgContent) {
             return NextResponse.json(

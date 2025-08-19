@@ -113,21 +113,23 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     drawRulers(ctx, canvas.width, canvas.height);
   });
 
-  // G-CODE GENERATION FUNCTIONS FOR EACH PIECE
+  // G-CODE GENERATION AND SENDING FUNCTIONS FOR EACH PIECE
   const generatePieceGcode = async (pieceType: "front" | "back" | "sleeve") => {
     setIsGenerating((prev) => ({ ...prev, [pieceType]: true }));
     setGcodeResults((prev) => ({
       ...prev,
-      [pieceType]: "Generating, please wait...",
+      [pieceType]: "Generating G-code, please wait...",
     }));
 
     try {
+      // Step 1: Generate G-code
       const response = await fetch("/api/gcode", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           machineId: machine.ipAddress,
-          pieceType: pieceType, // This is the key addition
+          pieceType: pieceType,
+          packetSize: 20, // 20 lines per packet
           tshirtSize: tshirt.size,
           tshirtStyle: tshirt.style,
           textContent: text.content,
@@ -152,16 +154,45 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
           ...prev,
           [pieceType]: `Error: ${data.error || "Unknown error"}`,
         }));
+        return;
+      }
+
+      const gcode = data.gcode || "";
+      if (!gcode) {
+        setGcodeResults((prev) => ({
+          ...prev,
+          [pieceType]: "No G-code generated",
+        }));
+        return;
+      }
+
+      // Step 2: Send G-code to ESP32
+      setGcodeResults((prev) => ({
+        ...prev,
+        [pieceType]: `Generated ${data.total_lines} lines. Sending to ESP32...`,
+      }));
+
+      const esp32Response = await fetch(`http://${machine.ipAddress}/api/gcode`, {
+        method: "POST",
+        headers: { "Content-Type": "application/plain" },
+        body: gcode,
+      });
+
+      if (esp32Response.ok) {
+        setGcodeResults((prev) => ({
+          ...prev,
+          [pieceType]: `✅ SUCCESS: ${pieceType.toUpperCase()} piece G-code sent to ESP32!\n${data.total_lines} lines in ${data.total_packets} packets\n\n${gcode}`,
+        }));
       } else {
         setGcodeResults((prev) => ({
           ...prev,
-          [pieceType]: data.gcode || "No G-code returned.",
+          [pieceType]: `❌ ESP32 ERROR: Failed to send to ${machine.ipAddress}\n\nGenerated G-code:\n${gcode}`,
         }));
       }
     } catch (err) {
       setGcodeResults((prev) => ({
         ...prev,
-        [pieceType]: `Network error: ${
+        [pieceType]: `❌ NETWORK ERROR: ${
           err instanceof Error ? err.message : String(err)
         }`,
       }));
@@ -170,21 +201,22 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
     setIsGenerating((prev) => ({ ...prev, [pieceType]: false }));
   };
 
-  // text G-code generation
+  // Text G-code generation and sending
   const generateTextGcode = async (pieceType: "text") => {
     setIsGenerating((prev) => ({ ...prev, [pieceType]: true }));
     setGcodeResults((prev) => ({
       ...prev,
-      [pieceType]: "Generating, please wait...",
+      [pieceType]: "Generating text G-code, please wait...",
     }));
 
     try {
+      // Step 1: Generate text G-code
       const response = await fetch("/api/servo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           machineId: machine.ipAddress,
-          pieceType: pieceType, // This is the key addition
+          pieceType: pieceType,
           tshirtSize: tshirt.size,
           tshirtStyle: tshirt.style,
           textContent: text.content,
@@ -209,16 +241,45 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
           ...prev,
           [pieceType]: `Error: ${data.error || "Unknown error"}`,
         }));
+        return;
+      }
+
+      const gcode = data.gcode || "";
+      if (!gcode) {
+        setGcodeResults((prev) => ({
+          ...prev,
+          [pieceType]: "No G-code generated",
+        }));
+        return;
+      }
+
+      // Step 2: Send G-code to ESP32
+      setGcodeResults((prev) => ({
+        ...prev,
+        [pieceType]: `Generated text G-code. Sending to ESP32...`,
+      }));
+
+      const esp32Response = await fetch(`http://${machine.ipAddress}/api/gcode`, {
+        method: "POST",
+        headers: { "Content-Type": "application/plain" },
+        body: gcode,
+      });
+
+      if (esp32Response.ok) {
+        setGcodeResults((prev) => ({
+          ...prev,
+          [pieceType]: `✅ SUCCESS: TEXT G-code sent to ESP32!\n\n${gcode}`,
+        }));
       } else {
         setGcodeResults((prev) => ({
           ...prev,
-          [pieceType]: data.gcode || "No G-code returned.",
+          [pieceType]: `❌ ESP32 ERROR: Failed to send to ${machine.ipAddress}\n\nGenerated G-code:\n${gcode}`,
         }));
       }
     } catch (err) {
       setGcodeResults((prev) => ({
         ...prev,
-        [pieceType]: `Network error: ${
+        [pieceType]: `❌ NETWORK ERROR: ${
           err instanceof Error ? err.message : String(err)
         }`,
       }));
@@ -655,6 +716,12 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
               >
                 SVG
               </TabsTrigger>
+              <TabsTrigger
+                value="machine"
+                className="flex-1 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+              >
+                Machine
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="tshirt" className="space-y-4 pt-4">
@@ -904,6 +971,26 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
             </TabsContent>
 
             <TabsContent value="machine" className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">
+                  ESP32 IP Address
+                </Label>
+                <Input
+                  type="text"
+                  value={machine.ipAddress}
+                  placeholder="192.168.8.121"
+                  onChange={(e) =>
+                    setMachine({
+                      ...machine,
+                      ipAddress: e.target.value,
+                    })
+                  }
+                  className="bg-white/50 backdrop-blur-sm border-white/30 focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500">
+                  IP address of your ESP32 CNC controller
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700">
                   Machine Type
