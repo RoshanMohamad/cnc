@@ -10,6 +10,11 @@
 #include <ArduinoJson.h>
 #include <ESP32Servo.h>
 
+// Stepper motor configuration
+#define STEP_PIN 25
+#define DIR_PIN 26
+#define STEPS_PER_MM 80
+
 // WiFi credentials
 const char* ssid = "Dialog 4G 003";
 const char* password = "8e6F8AbF";
@@ -30,6 +35,11 @@ const int servoOriginalPos = 0;    // Original position (degrees)
 const int servoTestPos = 90;       // Test position (degrees)
 bool servoInitialized = false;
 
+// Stepper motor configuration
+bool stepperInitialized = false;
+const unsigned long stepDelayMicros = 800; // Microseconds between steps (adjust for speed)
+const int defaultStepperDistance = 25; // Default distance to move in mm
+
 // WebSocket client
 WebSocketsClient webSocket;
 
@@ -40,6 +50,9 @@ const unsigned long heartbeatInterval = 5000; // 5 seconds
 bool firstGcodeReceived = false;
 bool jobInProgress = false;
 String currentJobId = "";
+unsigned long lastGcodeTime = 0;
+const unsigned long jobTimeoutMs = 30000; // 30 seconds timeout
+bool postJobStepperExecuted = false;
 
 void setup() {
   Serial.begin(115200);
@@ -56,6 +69,9 @@ void setup() {
   
   // Initialize servo
   setupServo();
+  
+  // Initialize stepper motor
+  setupStepper();
   
   // Initialize random seed
   randomSeed(analogRead(0));
@@ -75,6 +91,11 @@ void setup() {
   Serial.print(":");
   Serial.print(websocket_port);
   Serial.println(websocket_path);
+  
+  // Perform initial stepper test
+  Serial.println("🧪 Performing initial stepper motor test...");
+  delay(2000); // Wait 2 seconds for user to see message
+  testStepperMotor();
 }
 
 void loop() {
@@ -85,6 +106,13 @@ void loop() {
   if (now - lastHeartbeat > heartbeatInterval) {
     sendHeartbeat();
     lastHeartbeat = now;
+  }
+  
+  // Check for job timeout and trigger post-job stepper if needed
+  if (jobInProgress && !postJobStepperExecuted) {
+    if (now - lastGcodeTime > jobTimeoutMs) {
+      returnServoToOriginal();
+    }
   }
   
   delay(10);
@@ -138,22 +166,34 @@ void setupServo() {
   Serial.println(" degrees");
 }
 
+void setupStepper() {
+  // Initialize stepper motor pins
+  pinMode(STEP_PIN, OUTPUT);
+  pinMode(DIR_PIN, OUTPUT);
+  
+  // Set initial states
+  digitalWrite(STEP_PIN, LOW);
+  digitalWrite(DIR_PIN, LOW);  // LOW = forward direction
+  
+  stepperInitialized = true;
+  
+  Serial.print("Stepper motor initialized - STEP: Pin ");
+  Serial.print(STEP_PIN);
+  Serial.print(", DIR: Pin ");
+  Serial.print(DIR_PIN);
+  Serial.print(", Steps per mm: ");
+  Serial.println(STEPS_PER_MM);
+}
+
 void performServoTest() {
   if (!servoInitialized) {
     Serial.println("Servo not initialized, skipping test");
     return;
   }
   
-  Serial.println("🔧 First G-code received - Performing servo test...");
-  
-  // Move to test position
-  Serial.print("Moving servo to test position: ");
-  Serial.print(servoTestPos);
-  Serial.println(" degrees");
   testServo.write(servoTestPos);
   delay(1000);  // Wait for servo to move
   
-  Serial.println("✅ Servo test complete - Ready to process G-code");
 }
 
 void returnServoToOriginal() {
@@ -162,21 +202,82 @@ void returnServoToOriginal() {
     return;
   }
   
-  Serial.println("🏠 Job complete - Returning servo to original position...");
-  
-  // Move back to original position
-  Serial.print("Moving servo to original position: ");
-  Serial.print(servoOriginalPos);
-  Serial.println(" degrees");
+  Serial.println("🔄 Returning servo to original position...");
   testServo.write(servoOriginalPos);
   delay(1000);  // Wait for servo to move
   
-  Serial.println("✅ Servo returned to original position");
   
   // Reset job state
   jobInProgress = false;
   firstGcodeReceived = false;
   currentJobId = "";
+  postJobStepperExecuted = true;  // Mark stepper as executed
+  
+  // Activate stepper motor after job completion
+  activatePostJobStepper();
+}
+
+void activatePostJobStepper() {
+  if (!stepperInitialized) {
+    Serial.println("❌ Stepper not initialized, skipping post-job operation");
+    return;
+  }
+  
+  moveStepperDistance(defaultStepperDistance, false); // false = reverse only
+  
+}
+
+void moveStepperDistance(int distanceMM, bool forward) {
+  if (!stepperInitialized) {
+    Serial.println("❌ ERROR: Stepper motor not initialized!");
+    return;
+  }
+  
+  int totalSteps = distanceMM * STEPS_PER_MM;
+  
+  // Set direction
+  digitalWrite(DIR_PIN, forward ? LOW : HIGH);
+  
+  // Execute steps
+  for (int i = 0; i < totalSteps; i++) {
+    digitalWrite(STEP_PIN, HIGH);
+    delayMicroseconds(stepDelayMicros);
+    digitalWrite(STEP_PIN, LOW);
+    delayMicroseconds(stepDelayMicros);
+    
+  }
+
+}
+
+void testStepperMotor() {
+  Serial.println("🔬 === INITIAL STEPPER MOTOR TEST ===");
+  if (!stepperInitialized) {
+    Serial.println("❌ Stepper motor not initialized - test skipped");
+    return;
+  }
+  
+  Serial.println("📋 Test sequence: 10mm forward → pause → 10mm reverse");
+  
+  // Test forward movement
+  Serial.println("1️⃣ Testing forward movement...");
+  moveStepperDistance(10, true);
+  
+  Serial.println("⏸️ Pausing between test movements...");
+  delay(2000);
+  
+  // Test reverse movement  
+  Serial.println("2️⃣ Testing reverse movement...");
+  moveStepperDistance(10, false);
+  
+  Serial.println("✅ === INITIAL STEPPER MOTOR TEST COMPLETE ===");
+  Serial.println();
+}
+
+void stepperEmergencyStop() {
+  if (stepperInitialized) {
+    digitalWrite(STEP_PIN, LOW);
+    Serial.println("⚠️ Stepper emergency stop activated");
+  }
 }
 
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
@@ -222,6 +323,8 @@ void handleWebSocketMessage(uint8_t * payload, size_t length) {
     handleGcodeCommand(doc["data"]);
   } else if (messageType == "job_complete") {
     handleJobComplete(doc["data"]);
+  } else if (messageType == "stepper_command") {
+    handleStepperCommand(doc["data"]);
   } else if (messageType == "ping") {
     sendPong();
   } else if (messageType == "connection_established") {
@@ -242,11 +345,15 @@ void handleGcodeCommand(JsonVariant data) {
   
   currentGcodeLine = gcode;
   
+  // Update last G-code execution time
+  lastGcodeTime = millis();
+  
   // Check if this is the first G-code line of a new job
   if (!firstGcodeReceived || currentJobId != jobId) {
     firstGcodeReceived = true;
     jobInProgress = true;
     currentJobId = jobId;
+    postJobStepperExecuted = false;  // Reset flag for new job
     
     // Perform servo test on first G-code line
     performServoTest();
@@ -271,6 +378,30 @@ void handleJobComplete(JsonVariant data) {
   // Only return servo if this matches our current job
   if (jobInProgress && jobId == currentJobId) {
     returnServoToOriginal();
+  }
+}
+
+void handleStepperCommand(JsonVariant data) {
+  String action = data["action"];
+  
+  if (action == "move") {
+    int distance = data["distance"] | defaultStepperDistance; // Default if not specified
+    bool forward = data["forward"] | true; // Default forward
+    
+    Serial.print("📡 Remote stepper command - Move ");
+    Serial.print(forward ? "forward" : "backward");
+    Serial.print(" ");
+    Serial.print(distance);
+    Serial.println("mm");
+    
+    moveStepperDistance(distance, forward);
+    
+  } else if (action == "stop") {
+    stepperEmergencyStop();
+    
+  } else if (action == "test") {
+    Serial.println("📡 Remote stepper test command");
+    activatePostJobStepper();
   }
 }
 
@@ -331,7 +462,7 @@ unsigned long getRealisticExecutionTime(String gcode) {
 }
 
 void sendConnectionMessage() {
-  StaticJsonDocument<300> doc;
+  StaticJsonDocument<350> doc;
   doc["type"] = "machine_connection";
   doc["data"]["machine_id"] = machine_id;
   doc["data"]["machine_name"] = machine_name;
@@ -342,12 +473,16 @@ void sendConnectionMessage() {
   doc["data"]["mode"] = "SIMULATION_ONLY";
   doc["data"]["servo_enabled"] = servoInitialized;
   doc["data"]["servo_pin"] = servoPin;
+  doc["data"]["stepper_enabled"] = stepperInitialized;
+  doc["data"]["stepper_step_pin"] = STEP_PIN;
+  doc["data"]["stepper_dir_pin"] = DIR_PIN;
+  doc["data"]["steps_per_mm"] = STEPS_PER_MM;
   
   String message;
   serializeJson(doc, message);
   
   webSocket.sendTXT(message);
-  Serial.println("Sent connection message with servo status");
+  Serial.println("Sent connection message with servo and stepper status");
 }
 
 void sendHeartbeat() {
