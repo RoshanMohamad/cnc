@@ -155,6 +155,28 @@ class GcodeWebSocketSender {
               throw new Error(`Arduino GRBL Error: ${responseStr.substring(6)}`);
             } else if (responseStr.startsWith('alarm:')) {
               throw new Error(`Arduino GRBL Alarm: ${responseStr.substring(6)}`);
+            } else if (responseStr.startsWith('<') && responseStr.endsWith('>')) {
+              // Handle GRBL status messages like <Hold,MPos:0.000,0.000,0.000,WPos:0.000,0.000,0.000>
+              console.log(`📊 GRBL Status: ${responseStr}`);
+
+              const statusMatch = responseStr.match(/<([^,]+)/);
+              const machineStatus = statusMatch ? statusMatch[1] : 'Unknown';
+
+              if (machineStatus === 'Hold') {
+                console.log(`⏸️  GRBL is in HOLD state - sending resume command (~)`);
+                // Send resume command to continue operation
+                await this.sendHttpGcodeLine('~', 0);
+                // Continue waiting for OK response
+                continue;
+              } else if (machineStatus === 'Alarm') {
+                throw new Error('GRBL Alarm state detected - check machine safety');
+              } else if (machineStatus === 'Door') {
+                throw new Error('GRBL Door state - safety door is open');
+              }
+
+              // For Idle, Run, Jog states, continue waiting for OK
+              console.log(`📍 GRBL Status: ${machineStatus}`);
+              continue;
             } else if (responseStr === 'busy') {
               // Handle busy response with retry logic
               this.retryCount++;
@@ -302,22 +324,68 @@ class GcodeWebSocketSender {
     console.log(`🎯 Starting WebSocket G-code transmission (${lines.length} lines)`);
     console.log(`📋 Job ID: ${this.jobId}, Machine: ${machineId}`);
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       this.resolveTransmission = resolve;
       this.rejectTransmission = reject;
 
-      // Start timeout monitoring and begin transmission
-      this.startTimeoutMonitoring();
-      this.sendNextLine().catch(reject);
+      try {
+        // Initialize GRBL state before sending G-code
+        await this.initializeGRBL();
 
-      // Set overall timeout for the entire job
-      setTimeout(() => {
-        if (this.resolveTransmission) {
-          this.completeTransmission(false);
-          reject(new Error('Overall transmission timeout'));
-        }
-      }, 300000); // 5 minute total timeout
+        // Start timeout monitoring and begin transmission
+        this.startTimeoutMonitoring();
+        this.sendNextLine().catch(reject);
+
+        // Set overall timeout for the entire job
+        setTimeout(() => {
+          if (this.resolveTransmission) {
+            this.completeTransmission(false);
+            reject(new Error('Overall transmission timeout'));
+          }
+        }, 300000); // 5 minute total timeout
+
+      } catch (error) {
+        reject(error);
+      }
     });
+  }
+
+  // Initialize GRBL to proper state
+  private async initializeGRBL(): Promise<void> {
+    console.log('🔧 Initializing GRBL state...');
+
+    try {
+      // Send soft reset to clear any errors
+      console.log('🔄 Sending GRBL soft reset...');
+      await this.sendHttpGcodeLine('\x18', 0); // Ctrl+X soft reset
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for reset
+
+      // Check status and resume if in hold
+      console.log('▶️  Sending resume command to clear HOLD state...');
+      await this.sendHttpGcodeLine('~', 0); // Resume command
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Clear any alarms with unlock command
+      console.log('🔓 Sending unlock command...');
+      await this.sendHttpGcodeLine('$X', 0); // Unlock command
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Set to metric units
+      console.log('📏 Setting units to millimeters...');
+      await this.sendHttpGcodeLine('G21', 0); // Metric units
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Set absolute positioning
+      console.log('🎯 Setting absolute positioning...');
+      await this.sendHttpGcodeLine('G90', 0); // Absolute positioning
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      console.log('✅ GRBL initialization complete');
+
+    } catch (error) {
+      console.error('❌ GRBL initialization failed:', error);
+      // Don't throw error, continue with G-code transmission
+    }
   }
 
   disconnect() {
@@ -330,7 +398,7 @@ class GcodeWebSocketSender {
 // types/gcode.ts
 export interface GcodeRequest {
   machineId: string;
-  pieceType: 'front' | 'back' | 'sleeve';
+  pieceType: 'text' | 'front' | 'back' | 'sleeve';
   tshirtSize?: string;
   tshirtStyle?: string;
   textContent?: string;
@@ -348,7 +416,7 @@ export interface GcodeRequest {
 }
 
 interface TShirtSpecs {
-  pieceType: 'front' | 'back' | 'sleeve';
+  pieceType: 'text' | 'front' | 'back' | 'sleeve';
   tshirtSize: string;
   tshirtStyle: string;
   textContent: string;
@@ -561,81 +629,110 @@ function generateTshirtGcode(data: TShirtSpecs): string {
     // packetSize is not used in this function but kept for consistency
   } = data;
 
+  const m = 1;
+
   const frontGcodeContent: string = `G21
 F500
 G92 X0 Y0 Z0
 G1 Z0
 G1 X5 Y5
 M3 S10
-G1 Z1
+G1 Z${m}
 G1 X5 Y35
 G1 Z0
-M3 S30
-G1 Z1
-G3 X10 Y55 R37
+M3 S20
+G1 Z${m}
+G3 X9 Y45 R38
+G1 Z0
+M3 S15
+G1 Z${m}
+G3 X10 Y55 R35
 G1 Z0
 M3 S55
-G1 Z1
+G1 Z${m}
 G1 X15 Y55
 G1 Z0
 M3 S60
-G1 Z1
+G1 Z${m}
 G3 X20 Y54 R8
 G1 Z0
 M3 S45
-G1 Z1
+G1 Z${m}
 G3 X25 Y55 R8
 G1 Z0
 M3 S55
-G1 Z1
+G1 Z${m}
 G1 X30 Y55
 G1 Z0
 M3 S90
-G1 Z1
-G3 X35 Y35 R37
+G1 Z${m}
+G3 X31 Y45 R35
+G1 Z0
+M3 S80
+G1 Z${m}
+G3 X35 Y35 R35
 G1 Z0
 M3 S10
-G1 Z1
+G1 Z${m}
 G1 X35 Y5
 G1 Z0
 M3 S55
-G1 Z1
+G1 Z${m}
 G1 X5 Y5
 G1 Z0
-G1 X0 Y0`;
+G1 X0 Y0 Z0`;
 
-  const backGcodeContent: string = `; Back T-Shirt Piece - Valid GRBL Commands
+  const backGcodeContent: string = `
 G21
 G90
 G92 X0 Y0 Z0
 F1000
+G0 Z5
 G0 X5 Y5
-G1 Z-1 F500
-G1 X35 Y5
-G1 X35 Y40
-G2 X25 Y55 I-10 J0
-G1 X15 Y55
-G2 X5 Y40 I0 J-15
-G1 X5 Y5
+G1 Z-${m} F500
+G1 X35 Y5 F1000
+G1 X35 Y40 F1000
+G2 X25 Y55 I-10 J0 F800
+G1 X15 Y55 F1000
+G2 X5 Y40 I0 J-15 F800
+G1 X5 Y5 F1000
 G0 Z5
 G0 X0 Y0`;
 
-  const sleeveGcodeContent: string = `; Sleeve Piece - Valid GRBL Commands
+  const sleeveGcodeContent: string = `
 G21
 G90
 G92 X0 Y0 Z0
 F1000
+G0 Z5
 G0 X10 Y10
-G1 Z-1 F500
-G1 X20 Y10
-G1 X20 Y20
-G1 X5 Y20
-G3 X10 Y10 I5 J-10
+G1 Z-${m} F500
+G1 X20 Y10 F1000
+G1 X20 Y20 F1000
+G1 X5 Y20 F1000
+G2 X10 Y10 I5 J-10 F800
+G0 Z5
+G0 X0 Y0`;
+
+  const textGcodeContent: string = `
+G21
+G90
+G92 X0 Y0 Z0
+F1000
+G0 Z5
+G0 X10 Y10
+G1 Z-${m} F500
+G1 X20 Y10 F1000
+G1 X20 Y15 F1000
+G1 X10 Y15 F1000
+G1 X10 Y10 F1000
 G0 Z5
 G0 X0 Y0`;
 
   // Return the appropriate G-code based on piece type
   switch (pieceType) {
+    case 'text':
+      return textGcodeContent;
     case 'front':
       return frontGcodeContent;
     case 'back':
