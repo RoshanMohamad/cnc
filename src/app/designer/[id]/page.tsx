@@ -35,7 +35,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
 
   // Updated state to handle separate G-code for each piece
   const [gcodeResults, setGcodeResults] = useState({
-    text: "",
+    design: "",
     front: "",
     back: "",
     sleeve: "",
@@ -43,7 +43,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
   });
 
   const [isGenerating, setIsGenerating] = useState({
-    text: false,
+    design: false,
     front: false,
     back: false,
     sleeve: false,
@@ -114,7 +114,7 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
   });
 
   // G-CODE GENERATION AND SENDING FUNCTIONS FOR EACH PIECE
-  const generatePieceGcode = async (pieceType: "front" | "back" | "sleeve") => {
+  const generatePieceGcode = async (pieceType:"design" | "front" | "back" | "sleeve") => {
     setIsGenerating((prev) => ({ ...prev, [pieceType]: true }));
     setGcodeResults((prev) => ({
       ...prev,
@@ -200,94 +200,6 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
 
     setIsGenerating((prev) => ({ ...prev, [pieceType]: false }));
   };
-
-  // Text G-code generation and sending
-  const generateTextGcode = async (pieceType: "text") => {
-    setIsGenerating((prev) => ({ ...prev, [pieceType]: true }));
-    setGcodeResults((prev) => ({
-      ...prev,
-      [pieceType]: "Generating text G-code, please wait...",
-    }));
-
-    try {
-      // Step 1: Generate text G-code
-      const response = await fetch("/api/servo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          machineId: machine.ipAddress,
-          pieceType: pieceType,
-          tshirtSize: tshirt.size,
-          tshirtStyle: tshirt.style,
-          textContent: text.content,
-          textPosition: text.position,
-          textScale: text.scale,
-          textRotation: text.rotation,
-          textFont: text.fontFamily,
-          textBold: text.isBold,
-          textItalic: text.isItalic,
-          textAlign: text.align,
-          textColor: text.color,
-          material: "cotton",
-          thickness: machine.materialThickness,
-          speed: machine.cuttingSpeed,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || data.error) {
-        setGcodeResults((prev) => ({
-          ...prev,
-          [pieceType]: `Error: ${data.error || "Unknown error"}`,
-        }));
-        return;
-      }
-
-      const gcode = data.gcode || "";
-      if (!gcode) {
-        setGcodeResults((prev) => ({
-          ...prev,
-          [pieceType]: "No G-code generated",
-        }));
-        return;
-      }
-
-      // Step 2: Send G-code to ESP32
-      setGcodeResults((prev) => ({
-        ...prev,
-        [pieceType]: `Generated text G-code. Sending to ESP32...`,
-      }));
-
-      const esp32Response = await fetch(`http://${machine.ipAddress}/api/gcode`, {
-        method: "POST",
-        headers: { "Content-Type": "application/plain" },
-        body: gcode,
-      });
-
-      if (esp32Response.ok) {
-        setGcodeResults((prev) => ({
-          ...prev,
-          [pieceType]: `✅ SUCCESS: TEXT G-code sent to ESP32!\n\n${gcode}`,
-        }));
-      } else {
-        setGcodeResults((prev) => ({
-          ...prev,
-          [pieceType]: `❌ ESP32 ERROR: Failed to send to ${machine.ipAddress}\n\nGenerated G-code:\n${gcode}`,
-        }));
-      }
-    } catch (err) {
-      setGcodeResults((prev) => ({
-        ...prev,
-        [pieceType]: `❌ NETWORK ERROR: ${
-          err instanceof Error ? err.message : String(err)
-        }`,
-      }));
-    }
-
-    setIsGenerating((prev) => ({ ...prev, [pieceType]: false }));
-  };
-
 
   // Get current G-code for display
   const getCurrentGcode = () => {
@@ -1078,12 +990,12 @@ export default function DesignerPage({}: { params: Promise<{ id: string }> }) {
           <div className="flex gap-3">
             <Button
               variant="default"
-              onClick={() => generateTextGcode("text")}
-              disabled={isGenerating.text}
+              onClick={() => generatePieceGcode("design")}
+              disabled={isGenerating.design}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
             >
               <FileCode className="mr-2 h-4 w-4" />
-              {isGenerating.text ? "Generating..." : "Text G-code"}
+              {isGenerating.design ? "Generating..." : "Design G-code"}
             </Button>
             {/* Three separate buttons for each piece */}
             <Button
